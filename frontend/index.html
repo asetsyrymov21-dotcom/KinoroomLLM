@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Kinorum</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    /* ── Reset & CSS vars (synced with Telegram theme) ─────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: var(--tg-theme-bg-color, #0f1117);
+      --bg2: var(--tg-theme-secondary-bg-color, #1a1d2e);
+      --text: var(--tg-theme-text-color, #e2e8f0);
+      --hint: var(--tg-theme-hint-color, #94a3b8);
+      --link: var(--tg-theme-link-color, #6c63ff);
+      --btn: var(--tg-theme-button-color, #6c63ff);
+      --btn-text: var(--tg-theme-button-text-color, #ffffff);
+      --destructive: var(--tg-theme-destructive-text-color, #ef4444);
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    html,
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overscroll-behavior: none;
+    }
+
+    /* ── Screens ───────────────────────────────────────────────────── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* ── Top bar ────────────────────────────────────────────────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--bg2);
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .topbar-title {
+      font-size: 17px;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .topbar-sub {
+      font-size: 13px;
+      color: var(--hint);
+    }
+
+    .topbar-btn {
+      background: none;
+      border: none;
+      color: var(--link);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 6px;
+    }
+
+    /* ── Scrollable content area ────────────────────────────────────── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Cards ──────────────────────────────────────────────────────── */
+    .card {
+      background: var(--bg2);
+      border-radius: var(--radius);
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .card-sub {
+      font-size: 13px;
+      color: var(--hint);
+      margin-bottom: 8px;
+    }
+
+    .card-price {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--link);
+    }
+
+    /* ── Badges ─────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .badge-pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    .badge-active {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .badge-completed {
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--hint);
+    }
+
+    .badge-cancelled {
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--destructive);
+    }
+
+    /* ── Buttons ─────────────────────────────────────────────────────── */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius);
+      border: none;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.15s, transform 0.08s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+      opacity: 0.85;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: var(--btn);
+      color: var(--btn-text);
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--destructive);
+    }
+
+    .btn-sm {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn-sm:active {
+      opacity: 0.75;
+    }
+
+    /* ── Qty stepper ─────────────────────────────────────────────────── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stepper-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.12s;
+    }
+
+    .stepper-btn:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .stepper-val {
+      min-width: 28px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    /* ── Product row ─────────────────────────────────────────────────── */
+    .product-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .product-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .product-info {
+      flex: 1;
+    }
+
+    .product-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .product-price {
+      font-size: 13px;
+      color: var(--hint);
+    }
+
+    /* ── Booking detail ──────────────────────────────────────────────── */
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: var(--hint);
+    }
+
+    .info-value {
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* ── Timer ───────────────────────────────────────────────────────── */
+    .timer-block {
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    .timer-label {
+      font-size: 12px;
+      color: var(--hint);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 4px;
+    }
+
+    .timer-val {
+      font-size: 34px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-ok {
+      color: #22c55e;
+    }
+
+    .timer-warning {
+      color: #f59e0b;
+    }
+
+    .timer-expired {
+      color: var(--destructive);
+    }
+
+    /* ── Order summary ───────────────────────────────────────────────── */
+    .order-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      padding: 5px 0;
+    }
+
+    .order-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 15px;
+      font-weight: 700;
+      padding-top: 10px;
+      margin-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* ── Tabs ────────────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg2);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px 6px;
+      background: none;
+      border: none;
+      color: var(--hint);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    .tab.active {
+      background: var(--btn);
+      color: var(--btn-text);
+    }
+
+    /* ── Date chips ──────────────────────────────────────────────────── */
+    .date-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .date-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .date-chip {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--bg2);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      font-size: 13px;
+      transition: border-color 0.12s, background 0.12s;
+    }
+
+    .date-chip.selected {
+      background: var(--btn);
+      border-color: var(--btn);
+      color: var(--btn-text);
+    }
+
+    .date-chip .day-name {
+      font-size: 11px;
+      opacity: 0.7;
+      text-transform: uppercase;
+    }
+
+    .date-chip .day-num {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    /* ── Time row ────────────────────────────────────────────────────── */
+    .form-label {
+      font-size: 13px;
+      color: var(--hint);
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .time-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .time-row select,
+    select {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      font-size: 15px;
+      border-radius: var(--radius-sm);
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    /* ── Section header ──────────────────────────────────────────────── */
+    .section-header {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--hint);
+      padding: 4px 0 8px;
+    }
+
+    /* ── Spinner ─────────────────────────────────────────────────────── */
+    .spinner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 120px;
+      color: var(--hint);
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spin-icon {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--btn);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* ── Empty ───────────────────────────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--hint);
+      font-size: 14px;
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    /* ── Cart sticky footer ──────────────────────────────────────────── */
+    .sticky-footer {
+      position: sticky;
+      bottom: 0;
+      background: var(--bg2);
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════ SCREEN: Loading ══════ -->
+  <div class="screen active" id="screen-loading">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+      <div class="spin-icon"></div>
+      <p style="color:var(--hint); font-size:14px;">Загрузка...</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ SCREEN: Halls ══════ -->
+  <div class="screen" id="screen-halls">
+    <div class="topbar">
+      <div style="flex:1; min-width:0;">
+        <div class="topbar-title">🎮 Kinoroom</div>
+        <div class="topbar-sub" id="user-greeting">Добро пожаловать</div>
+      </div>
+      <button class="topbar-btn" onclick="showBookings()">Мои брони →</button>
+    </div>
+    <div class="content">
+      <!-- Приветственный баннер -->
+      <div style="
+        background: linear-gradient(135deg, rgba(108,99,255,0.25) 0%, rgba(108,99,255,0.08) 100%);
+        border: 1px solid rgba(108,99,255,0.35);
+        border-radius: var(--radius);
+        padding: 20px 18px 18px;
+        text-align: center;
+      ">
+        <div style="font-size: 38px; margin-bottom: 8px;">🎮</div>
+        <div style="font-size: 18px; font-weight: 800; margin-bottom: 6px;">Добро пожаловать в Kinoroom!</div>
+        <div style="font-size: 13px; color: var(--hint); line-height: 1.5;">
+          Выберите зал, забронируйте время<br>и закажите еду заранее — всё будет готово к вашему приходу.
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top: 4px;">Доступные залы</div>
+
+      <div id="halls-list">
+        <div class="spinner">
+          <div class="spin-icon"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ SCREEN: Book Hall ════ -->
+  <div class="screen" id="screen-book">
+    <div class="topbar">
+      <button class="topbar-btn" onclick="goBack()">‹ Назад</button>
+      <div class="topbar-title" id="book-hall-name">Бронировать</div>
+    </div>
+    <div class="content">
+      <div class="card" id="book-hall-info"></div>
+
+      <div>
+        <div class="form-label">Дата</div>
+        <div class="date-scroll" id="date-chips"></div>
+      </div>
+
+      <!-- Переключатель режима оплаты -->
+      <div style="display:flex; align-items:center; justify-content:space-between;
+        background:var(--bg2); border-radius:var(--radius-sm); padding:12px 14px;">
+        <div>
+          <div style="font-size:14px; font-weight:600;">По факту</div>
+          <div style="font-size:12px; color:var(--hint); margin-top:2px;">Цена считается по реальному времени</div>
+        </div>
+        <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
+          <input type="checkbox" id="toggle-open-ended" onchange="onOpenEndedChange()"
+            style="opacity:0; width:0; height:0;">
+          <span id="toggle-track" style="
+            position:absolute; cursor:pointer; inset:0;
+            background:rgba(255,255,255,0.15); border-radius:12px; transition:.2s;
+          "></span>
+          <span id="toggle-thumb" style="
+            position:absolute; content:''; height:18px; width:18px;
+            left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s;
+          "></span>
+        </label>
+      </div>
+
+      <div class="time-row">
+        <div>
+          <div class="form-label">Начало</div>
+          <select id="time-start"></select>
+        </div>
+        <div id="end-time-block">
+          <div class="form-label">Конец</div>
+          <select id="time-end"></select>
+        </div>
+      </div>
+
+      <div id="occupied-slots-block" style="display:none;
+        background: rgba(239,68,68,0.08);
+        border: 1px solid rgba(239,68,68,0.3);
+        border-radius: var(--radius);
+        padding: 12px 14px;">
+        <div style="font-size:12px; font-weight:700; color:#ef4444; text-transform:uppercase;
+          letter-spacing:.5px; margin-bottom:8px;">🔴 Уже занято</div>
+        <div id="occupied-slots-list" style="font-size:13px; color:var(--hint); line-height:1.8;"></div>
+      </div>
+
+      <div id="overlap-warning" style="display:none;
+        background: rgba(239,68,68,0.1);
+        border: 1px solid rgba(239,68,68,0.4);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        font-size:13px; color:#ef4444; font-weight:600;">
+        ⛔ Это время уже занято — выберите другой интервал
+      </div>
+
+      <div class="card" id="price-preview" style="display:none;">
+        <div class="info-row">
+          <span class="info-label">Зал</span>
+          <span class="info-value" id="preview-hall"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Дата</span>
+          <span class="info-value" id="preview-date"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Время</span>
+          <span class="info-value" id="preview-time"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Длительность</span>
+          <span class="info-value" id="preview-duration"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Стоимость</span>
+          <span class="info-value" style="color:var(--link)" id="preview-price"></span>
+        </div>
+        <div id="loyalty-banner" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;text-align:center"></div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-confirm-booking" onclick="openPreorder()">Далее →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ SCREEN: Pre-order ════ -->
+  <div class="screen" id="screen-preorder">
+    <div class="topbar">
+      <button class="topbar-btn" onclick="goBack()">‹ Назад</button>
+      <div class="topbar-title">🍿 Предзаказ</div>
+    </div>
+    <div class="content">
+      <div class="card" style="background:rgba(108,99,255,0.1); border-color:rgba(108,99,255,0.3);">
+        <div style="font-size:14px; color:var(--link); font-weight:700;">Закажите заранее</div>
+        <div style="font-size:13px; color:var(--hint); margin-top:4px;">Напитки и перекусы будут готовы к вашему приходу. Можно пропустить и заказать во время сеанса.</div>
+      </div>
+      <div class="section-header">Меню</div>
+      <div class="card" id="preorder-catalog"></div>
+      <div id="preorder-summary-block" style="display:none;">
+        <div class="section-header">Ваш предзаказ</div>
+        <div class="card" id="preorder-summary"></div>
+      </div>
+    </div>
+    <div class="sticky-footer" style="display:flex; flex-direction:column; gap:8px;">
+      <button class="btn btn-primary" id="btn-confirm-with-preorder" onclick="submitBookingWithPreorder(false)">Забронировать</button>
+      <button class="btn btn-ghost" id="btn-skip-preorder" onclick="submitBookingWithPreorder(true)">Пропустить →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ SCREEN: Booking Success ══ -->
+  <div class="screen" id="screen-booking-success">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px;">
+      <div style="font-size:64px;">🎉</div>
+      <div style="font-size:20px; font-weight:800; text-align:center;">Бронь создана!</div>
+      <div style="color:var(--hint); font-size:14px; text-align:center;" id="success-sub"></div>
+      <div class="card" id="success-preorder-block" style="width:100%; display:none; margin-top:4px;"></div>
+      <button class="btn btn-primary" style="margin-top:16px; width:100%;" onclick="showBookings('pending')">Мои брони →</button>
+      <button class="btn btn-ghost" style="width:100%;" onclick="showHalls()">На главную</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ SCREEN: My Bookings ══ -->
+  <div class="screen" id="screen-bookings">
+    <div class="topbar">
+      <button class="topbar-btn" onclick="showHalls()">‹ Залы</button>
+      <div class="topbar-title">Мои брони</div>
+    </div>
+    <div class="content">
+      <div class="tabs">
+        <button class="tab active" onclick="setBookingTab('active', this)">Активные</button>
+        <button class="tab" onclick="setBookingTab('pending', this)">Ожидают</button>
+        <button class="tab" onclick="setBookingTab('history', this)">История</button>
+      </div>
+      <div id="bookings-list">
+        <div class="spinner">
+          <div class="spin-icon"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ SCREEN: Active Booking ══ -->
+  <div class="screen" id="screen-active-booking">
+    <div class="topbar">
+      <button class="topbar-btn" onclick="showBookings()">‹ Назад</button>
+      <div class="topbar-title" id="active-hall-name">Сеанс</div>
+    </div>
+    <div class="content">
+      <div class="timer-block">
+        <div class="timer-label">До конца сеанса</div>
+        <div class="timer-val timer-ok" id="active-timer">—</div>
+      </div>
+
+      <div class="card" id="active-booking-info"></div>
+
+      <div id="existing-orders-block" style="display:none;">
+        <div class="section-header">Мои заказы</div>
+        <div id="existing-orders-list"></div>
+      </div>
+
+      <div class="section-header">Новый заказ</div>
+      <div class="card" id="product-catalog">
+        <div class="spinner">
+          <div class="spin-icon"></div>
+        </div>
+      </div>
+
+      <div id="cart-summary-block" style="display:none;">
+        <div class="section-header">Ваш заказ</div>
+        <div class="card" id="cart-summary"></div>
+      </div>
+    </div>
+    <div class="sticky-footer" id="cart-footer" style="display:none;">
+      <button class="btn btn-primary" id="btn-place-order" onclick="placeOrder()">Отправить заказ</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ SCREEN: Order Sent ════ -->
+  <div class="screen" id="screen-order-sent">
+    <div
+      style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px;">
+      <div style="font-size:64px;">🎉</div>
+      <div style="font-size:20px; font-weight:800; text-align:center;">Заказ принят!</div>
+      <div style="color:var(--hint); font-size:14px; text-align:center;">Оператор скоро принесёт ваши товары</div>
+      <button class="btn btn-primary" style="margin-top:16px; width:100%;" onclick="backToActiveBooking()">Вернуться к
+        сеансу</button>
+      <button class="btn btn-ghost" style="width:100%;" onclick="showHalls()">На главную</button>
+    </div>
+  </div>
+
+  <script>
+    // ══════════════════════════════════════════════════════════════════
+    // CONFIG
+    // ══════════════════════════════════════════════════════════════════
+    const API = '';   // same origin — served by FastAPI at /api/v1
+
+    // ══════════════════════════════════════════════════════════════════
+    // STATE
+    // ══════════════════════════════════════════════════════════════════
+    let tg = window.Telegram?.WebApp;
+    let state = {
+      user: null,          // UserRead from API
+      bookedSlots: [],     // [{start_time, end_time}] for selected hall+date
+      halls: [],           // HallRead[]
+      products: [],        // ProductRead[]
+      categories: [],      // CategoryRead[]
+      loyaltyStatus: null, // UserLoyaltyStatus
+      selectedHall: null,  // HallRead
+      selectedDate: null,  // Date
+      selectedStart: null, // "HH:MM"
+      selectedEnd: null,   // "HH:MM"
+      bookings: [],        // BookingRead[]
+      activeBooking: null, // BookingRead
+      cart: {},            // product_id → qty
+      timerInterval: null,
+      bookingTab: 'active',
+    };
+
+    // ══════════════════════════════════════════════════════════════════
+    // INIT
+    // ══════════════════════════════════════════════════════════════════
+    async function init() {
+      tg?.expand();
+      tg?.setHeaderColor('secondary_bg_color');
+
+      try {
+        // Get Telegram user data
+        const tgUser = tg?.initDataUnsafe?.user;
+        const telegramId = tgUser?.id ?? 0;
+        const name = tgUser
+          ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
+          : 'Гость';
+
+        // Auth: get_or_create user
+        const user = await apiFetch('/api/v1/users/', {
+          method: 'POST',
+          body: JSON.stringify({ telegram_id: telegramId, name }),
+        });
+        state.user = user;
+        document.getElementById('user-greeting').textContent = `Привет, ${user.name.split(' ')[0]}!`;
+
+        // Load halls, products, categories and loyalty status in parallel
+        const [halls, products, categories, loyaltyStatus] = await Promise.all([
+          apiFetch('/api/v1/halls/?active_only=true'),
+          apiFetch('/api/v1/products/?active_only=true'),
+          apiFetch('/api/v1/categories/?active_only=true').catch(() => []),
+          apiFetch(`/api/v1/loyalty/users/${user.id}`).catch(() => null),
+        ]);
+        state.halls = halls;
+        state.products = products;
+        state.categories = categories;
+        state.loyaltyStatus = loyaltyStatus;
+
+        renderHalls();
+        showScreen('halls');
+      } catch (e) {
+        showError('Не удалось подключиться к серверу.\n' + e.message);
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // API
+    // ══════════════════════════════════════════════════════════════════
+    async function apiFetch(path, opts = {}) {
+      const res = await fetch(path, {
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' },
+        ...opts,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+      return res.json();
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // NAVIGATION
+    // ══════════════════════════════════════════════════════════════════
+    let screenStack = [];
+
+    function showScreen(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + name).classList.add('active');
+    }
+
+    function goBack() {
+      if (screenStack.length > 0) {
+        const prev = screenStack.pop();
+        showScreen(prev);
+      } else {
+        showScreen('halls');
+      }
+    }
+
+    function pushScreen(name) {
+      const current = document.querySelector('.screen.active')?.id?.replace('screen-', '');
+      if (current) screenStack.push(current);
+      showScreen(name);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // SCREEN: HALLS
+    // ══════════════════════════════════════════════════════════════════
+    function renderHalls() {
+      const el = document.getElementById('halls-list');
+      if (state.halls.length === 0) {
+        el.innerHTML = `<div class="empty"><div class="empty-icon">🚫</div>Нет доступных залов</div>`;
+        return;
+      }
+      el.innerHTML = state.halls.map(h => `
+    <div class="card" onclick="openBookHall(${h.id})" style="cursor:pointer;">
+      <div class="card-title">${esc(h.name)}</div>
+      <div class="card-sub">${h.description ? esc(h.description) : ''} ${h.capacity ? '· ' + h.capacity + ' мест' : ''}</div>
+      <div class="card-price">${fmt(h.price_per_hour)} ₸ / час</div>
+    </div>
+  `).join('');
+    }
+
+    function showHalls() {
+      screenStack = [];
+      showScreen('halls');
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // SCREEN: BOOK HALL
+    // ══════════════════════════════════════════════════════════════════
+    function openBookHall(hallId) {
+      state.selectedHall = state.halls.find(h => h.id === hallId);
+      state.cart = {};
+      screenStack = ['halls'];
+      showScreen('book');
+
+      document.getElementById('book-hall-name').textContent = state.selectedHall.name;
+      document.getElementById('book-hall-info').innerHTML = `
+    <div class="card-title">${esc(state.selectedHall.name)}</div>
+    <div class="card-sub">
+      ${state.selectedHall.description ? esc(state.selectedHall.description) + '<br>' : ''}
+      ${state.selectedHall.capacity} мест
+    </div>
+    <div class="card-price">${fmt(state.selectedHall.price_per_hour)} ₸ / час</div>
+  `;
+
+      state.bookedSlots  = [];
+      state.openEnded    = false;
+      state.selectedDate  = null;
+      state.selectedStart = null;
+      state.selectedEnd   = null;
+      // Сброс переключателя
+      const tog = document.getElementById('toggle-open-ended');
+      if (tog) { tog.checked = false; applyToggleStyle(false); }
+      document.getElementById('end-time-block').style.display = '';
+      renderDateChips();
+      renderTimeSelects();
+      loadHallSlots();
+    }
+
+    function applyToggleStyle(on) {
+      const track = document.getElementById('toggle-track');
+      const thumb = document.getElementById('toggle-thumb');
+      if (!track) return;
+      track.style.background = on ? 'var(--btn)' : 'rgba(255,255,255,0.15)';
+      thumb.style.transform   = on ? 'translateX(20px)' : 'translateX(0)';
+    }
+
+    function onOpenEndedChange() {
+      state.openEnded = document.getElementById('toggle-open-ended').checked;
+      applyToggleStyle(state.openEnded);
+      document.getElementById('end-time-block').style.display = state.openEnded ? 'none' : '';
+      updatePricePreview();
+    }
+
+    async function loadHallSlots() {
+      if (!state.selectedHall || !state.selectedDate) return;
+      const dateStr = state.selectedDate.toISOString().slice(0, 10);
+      try {
+        state.bookedSlots = await apiFetch(
+          `/api/v1/bookings/halls/${state.selectedHall.id}/slots?date=${dateStr}`
+        );
+      } catch {
+        state.bookedSlots = [];
+      }
+      renderOccupiedSlots();
+      renderTimeSelects();
+      updatePricePreview();
+    }
+
+    function renderOccupiedSlots() {
+      const block = document.getElementById('occupied-slots-block');
+      const list  = document.getElementById('occupied-slots-list');
+      if (!state.bookedSlots.length) {
+        block.style.display = 'none';
+        return;
+      }
+      const fmt2 = t => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      list.innerHTML = state.bookedSlots
+        .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+        .map(s => `${fmt2(s.start_time)} – ${fmt2(s.end_time)}`)
+        .join('<br>');
+      block.style.display = 'block';
+    }
+
+    function isSlotOccupied(timeStr) {
+      if (!state.bookedSlots.length || !state.selectedDate) return false;
+      const t     = toDateTime(state.selectedDate, timeStr);
+      const tEnd  = new Date(t.getTime() + 30 * 60 * 1000);
+      return state.bookedSlots.some(s => {
+        const sStart = new Date(s.start_time);
+        const sEnd   = new Date(s.end_time);
+        return t < sEnd && tEnd > sStart;
+      });
+    }
+
+    function hasOverlapWithBooked(startStr, endStr) {
+      if (!state.bookedSlots.length || !state.selectedDate) return false;
+      const s = toDateTime(state.selectedDate, startStr);
+      const e = toDateTime(state.selectedDate, endStr);
+      return state.bookedSlots.some(b => {
+        return s < new Date(b.end_time) && e > new Date(b.start_time);
+      });
+    }
+
+    function renderDateChips() {
+      const today = new Date();
+      const container = document.getElementById('date-chips');
+      const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+      let html = '';
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const iso = d.toISOString().slice(0, 10);
+        const selected = iso === (state.selectedDate?.toISOString().slice(0, 10) ?? iso);
+        html += `
+      <div class="date-chip ${selected ? 'selected' : ''}" onclick="selectDate('${iso}', this)">
+        <span class="day-name">${dayNames[d.getDay()]}</span>
+        <span class="day-num">${d.getDate()}</span>
+      </div>`;
+        if (!state.selectedDate && i === 0) state.selectedDate = d;
+      }
+      container.innerHTML = html;
+    }
+
+    function selectDate(isoStr, el) {
+      state.selectedDate = new Date(isoStr + 'T00:00:00');
+      document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      loadHallSlots();
+    }
+
+    function renderTimeSelects() {
+      const startSel = document.getElementById('time-start');
+      const endSel = document.getElementById('time-end');
+      const hours = [];
+      for (let h = 8; h <= 23; h++) {
+        for (const m of ['00', '30']) {
+          if (h === 23 && m === '30') continue;
+          hours.push(`${String(h).padStart(2, '0')}:${m}`);
+        }
+      }
+
+      // Проверяем, выбран ли сегодняшний день
+      const isToday = state.selectedDate && (() => {
+        const now = new Date();
+        const d = state.selectedDate;
+        return d.getFullYear() === now.getFullYear() &&
+               d.getMonth()    === now.getMonth()    &&
+               d.getDate()     === now.getDate();
+      })();
+
+      const isPast = (t) => {
+        if (!isToday) return false;
+        const now = new Date();
+        const [h, m] = t.split(':').map(Number);
+        return h < now.getHours() || (h === now.getHours() && m <= now.getMinutes());
+      };
+
+      const makeOption = (t, forEnd) => {
+        const occ  = isSlotOccupied(t);
+        const past = isPast(t);
+        const disabled = occ || past;
+        const label = occ ? `${t} — занято` : past ? `${t} — прошло` : t;
+        const style = occ ? 'color:#ef4444' : past ? 'color:#64748b' : '';
+        return `<option value="${t}" ${disabled ? `disabled style="${style}"` : ''}>${label}</option>`;
+      };
+      startSel.innerHTML = hours.map(t => makeOption(t, false)).join('');
+
+      // Выбираем первый незанятый и не прошедший слот для старта
+      const freeStart = hours.find(t => !isSlotOccupied(t) && !isPast(t)) || '10:00';
+      startSel.value = state.selectedStart || freeStart;
+      state.selectedStart = startSel.value;
+
+      // Функция обновления end-селекта: только слоты ПОСЛЕ выбранного старта
+      const refreshEndOptions = () => {
+        const currentEnd = endSel.value || state.selectedEnd;
+        endSel.innerHTML = hours
+          .filter(t => t > state.selectedStart)
+          .map(t => makeOption(t, true))
+          .join('');
+        // Восстанавливаем предыдущий выбор если он ещё валиден, иначе берём первый свободный
+        if (currentEnd && endSel.querySelector(`option[value="${currentEnd}"]:not([disabled])`)) {
+          endSel.value = currentEnd;
+        } else {
+          const freeEnd = hours.find(t => t > state.selectedStart && !isSlotOccupied(t) && !isPast(t));
+          endSel.value = freeEnd || '';
+        }
+        state.selectedEnd = endSel.value;
+      };
+
+      refreshEndOptions();
+
+      startSel.onchange = () => {
+        state.selectedStart = startSel.value;
+        refreshEndOptions();
+        updatePricePreview();
+      };
+      endSel.onchange = () => { state.selectedEnd = endSel.value; updatePricePreview(); };
+    }
+
+    function updatePricePreview() {
+      const preview = document.getElementById('price-preview');
+      const btn = document.getElementById('btn-confirm-booking');
+      const hall = state.selectedHall;
+      if (!hall || !state.selectedDate || !state.selectedStart || !state.selectedEnd) return;
+
+      const start = toDateTime(state.selectedDate, state.selectedStart);
+      const overlapWarn = document.getElementById('overlap-warning');
+
+      // Режим "по факту" — end_time не важен для валидации
+      if (!state.openEnded) {
+        const end = toDateTime(state.selectedDate, state.selectedEnd);
+        const diffH = (end - start) / 3600000;
+
+        if (diffH <= 0) {
+          preview.style.display = 'none';
+          overlapWarn.style.display = 'none';
+          btn.disabled = true;
+          btn.textContent = 'Неверный интервал';
+          return;
+        }
+
+        if (hasOverlapWithBooked(state.selectedStart, state.selectedEnd)) {
+          preview.style.display = 'none';
+          overlapWarn.style.display = 'block';
+          btn.disabled = true;
+          btn.textContent = 'Время занято';
+          return;
+        }
+      } else {
+        // Для "по факту" проверяем только что сам старт не занят
+        const fakeEnd = new Date(start.getTime() + 30 * 60 * 1000);
+        const startStr = state.selectedStart;
+        const fakeEndStr = `${pad(fakeEnd.getHours())}:${pad(fakeEnd.getMinutes())}`;
+        if (hasOverlapWithBooked(startStr, fakeEndStr)) {
+          preview.style.display = 'none';
+          overlapWarn.style.display = 'block';
+          btn.disabled = true;
+          btn.textContent = 'Время занято';
+          return;
+        }
+      }
+
+      overlapWarn.style.display = 'none';
+
+      document.getElementById('preview-hall').textContent = hall.name;
+      document.getElementById('preview-date').textContent = state.selectedDate.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long' });
+      preview.style.display = 'block';
+      btn.disabled = false;
+
+      // Loyalty banner
+      const loyBanner = document.getElementById('loyalty-banner');
+      const ls = state.loyaltyStatus;
+      if (ls && !state.openEnded) {
+        if (ls.active_reward) {
+          const r = ls.active_reward;
+          if (r.reward_type === 'free_booking') {
+            loyBanner.style.display = 'block';
+            loyBanner.style.background = 'rgba(34,197,94,.15)';
+            loyBanner.style.color = '#22c55e';
+            loyBanner.textContent = '🎉 Этот визит бесплатный! Аренда = 0 ₸';
+          } else {
+            loyBanner.style.display = 'block';
+            loyBanner.style.background = 'rgba(108,99,255,.15)';
+            loyBanner.style.color = '#818cf8';
+            loyBanner.textContent = `🎁 Скидка ${Number(r.reward_value)}% — это ваш ${ls.completed_visits + 1}-й визит!`;
+          }
+        } else if (ls.next_rule && ls.visits_until_reward !== null) {
+          loyBanner.style.display = 'block';
+          loyBanner.style.background = 'rgba(245,158,11,.1)';
+          loyBanner.style.color = '#f59e0b';
+          const r = ls.next_rule;
+          const reward = r.reward_type === 'free_booking' ? 'бесплатная аренда' : `скидка ${Number(r.reward_value)}%`;
+          loyBanner.textContent = `⭐ Ещё ${ls.visits_until_reward} ${ls.visits_until_reward === 1 ? 'визит' : 'визита'} до награды: ${reward}`;
+        } else {
+          loyBanner.style.display = 'none';
+        }
+      } else {
+        loyBanner.style.display = 'none';
+      }
+
+      if (state.openEnded) {
+        document.getElementById('preview-time').textContent  = `с ${state.selectedStart}`;
+        document.getElementById('preview-duration').textContent = 'по факту';
+        document.getElementById('preview-price').textContent = `${fmt(hall.price_per_hour)} ₸/час`;
+        btn.textContent = 'Далее — оплата по факту →';
+      } else {
+        const basePrice = diffH * parseFloat(hall.price_per_hour);
+        let finalPrice = basePrice;
+        if (ls && ls.active_reward) {
+          if (ls.active_reward.reward_type === 'free_booking') finalPrice = 0;
+          else finalPrice = basePrice * (1 - Number(ls.active_reward.reward_value) / 100);
+        }
+        const priceStr = finalPrice.toFixed(0);
+        document.getElementById('preview-time').textContent  = `${state.selectedStart} – ${state.selectedEnd}`;
+        document.getElementById('preview-duration').textContent = `${diffH} ч`;
+        document.getElementById('preview-price').innerHTML = finalPrice < basePrice
+          ? `<s style="color:var(--text-muted);font-size:12px">${fmt(basePrice.toFixed(0))} ₸</s> ${fmt(priceStr)} ₸`
+          : `${fmt(priceStr)} ₸`;
+        btn.textContent = `Далее — ${fmt(priceStr)} ₸ →`;
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // SCREEN: PRE-ORDER
+    // ══════════════════════════════════════════════════════════════════
+    function openPreorder() {
+      state.cart = {};
+      pushScreen('preorder');
+      renderPreorderCatalog();
+      updatePreorderUI();
+    }
+
+    function renderProductRow(p, prefix) {
+      const idAttr = `${prefix}-${p.id}`;
+      const incFn  = prefix === 'pqty' ? `preorderInc(${p.id})` : `cartInc(${p.id})`;
+      const decFn  = prefix === 'pqty' ? `preorderDec(${p.id})` : `cartDec(${p.id})`;
+      return `<div class="product-row">
+        <div class="product-info">
+          <div class="product-name">${esc(p.name)}</div>
+          <div class="product-price">${fmt(p.price)} ₸</div>
+        </div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="${decFn}">−</button>
+          <span class="stepper-val" id="${idAttr}">0</span>
+          <button class="stepper-btn" onclick="${incFn}">+</button>
+        </div>
+      </div>`;
+    }
+
+    function renderGroupedProducts(products, prefix) {
+      if (!products.length) return `<div class="empty" style="padding:20px 0;">Нет доступных товаров</div>`;
+      const cats = state.categories.slice().sort((a, b) => a.position - b.position);
+      const catMap = {};
+      cats.forEach(c => { catMap[c.id] = c; });
+
+      const grouped = {};
+      const uncategorized = [];
+      products.forEach(p => {
+        if (p.category_id && catMap[p.category_id]) {
+          if (!grouped[p.category_id]) grouped[p.category_id] = [];
+          grouped[p.category_id].push(p);
+        } else {
+          uncategorized.push(p);
+        }
+      });
+
+      let html = '';
+      for (const cat of cats) {
+        const items = grouped[cat.id];
+        if (!items || items.length === 0) continue;
+        html += `<div style="padding:10px 0 4px;font-size:12px;font-weight:700;color:var(--link);letter-spacing:.04em;text-transform:uppercase">${cat.emoji ? cat.emoji + ' ' : ''}${esc(cat.name)}</div>`;
+        html += items.map(p => renderProductRow(p, prefix)).join('');
+      }
+      if (uncategorized.length) {
+        if (html) html += `<div style="padding:10px 0 4px;font-size:12px;font-weight:700;color:var(--hint);letter-spacing:.04em;text-transform:uppercase">Разное</div>`;
+        html += uncategorized.map(p => renderProductRow(p, prefix)).join('');
+      }
+      return html;
+    }
+
+    function renderPreorderCatalog() {
+      const el = document.getElementById('preorder-catalog');
+      el.innerHTML = renderGroupedProducts(state.products, 'pqty');
+    }
+
+    function preorderInc(pid) {
+      state.cart[pid] = (state.cart[pid] || 0) + 1;
+      document.getElementById(`pqty-${pid}`).textContent = state.cart[pid];
+      tg?.HapticFeedback?.selectionChanged();
+      updatePreorderUI();
+    }
+
+    function preorderDec(pid) {
+      if (!state.cart[pid]) return;
+      state.cart[pid]--;
+      if (state.cart[pid] === 0) delete state.cart[pid];
+      document.getElementById(`pqty-${pid}`).textContent = state.cart[pid] || 0;
+      tg?.HapticFeedback?.selectionChanged();
+      updatePreorderUI();
+    }
+
+    function updatePreorderUI() {
+      const items = Object.entries(state.cart).filter(([, q]) => q > 0);
+      const summaryBlock = document.getElementById('preorder-summary-block');
+      const summaryEl    = document.getElementById('preorder-summary');
+      const btn          = document.getElementById('btn-confirm-with-preorder');
+      const skipBtn      = document.getElementById('btn-skip-preorder');
+
+      if (items.length === 0) {
+        summaryBlock.style.display = 'none';
+        btn.textContent = 'Забронировать (без предзаказа)';
+        skipBtn.style.display = 'block';
+        return;
+      }
+
+      let total = 0;
+      const rows = items.map(([pid, qty]) => {
+        const p = state.products.find(p => p.id == pid);
+        const sub = qty * parseFloat(p.price);
+        total += sub;
+        return `<div class="order-item-row">
+          <span>${esc(p.name)} × ${qty}</span>
+          <span style="font-weight:600;">${fmt(sub)} ₸</span>
+        </div>`;
+      });
+      rows.push(`<div class="order-total"><span>Итого</span><span>${fmt(total)} ₸</span></div>`);
+      summaryEl.innerHTML = rows.join('');
+      summaryBlock.style.display = 'block';
+      btn.textContent = `Забронировать + предзаказ (${fmt(total)} ₸)`;
+      skipBtn.style.display = 'none';
+    }
+
+    async function submitBookingWithPreorder(skip) {
+      const btn     = document.getElementById('btn-confirm-with-preorder');
+      const skipBtn = document.getElementById('btn-skip-preorder');
+      btn.disabled = true;
+      skipBtn.disabled = true;
+      btn.textContent = 'Создаём бронь...';
+
+      const cartItems = skip ? [] : Object.entries(state.cart).filter(([, q]) => q > 0);
+
+      try {
+        const start = toDateTime(state.selectedDate, state.selectedStart);
+        // При режиме "по факту" end_time = start + 12ч (для проверки занятости)
+        const end = state.openEnded
+          ? new Date(start.getTime() + 12 * 3600 * 1000)
+          : toDateTime(state.selectedDate, state.selectedEnd);
+        const booking = await apiFetch('/api/v1/bookings/', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_id:       state.user.id,
+            hall_id:       state.selectedHall.id,
+            start_time:    start.toISOString(),
+            end_time:      end.toISOString(),
+            is_open_ended: state.openEnded,
+          }),
+        });
+
+        if (cartItems.length > 0) {
+          btn.textContent = 'Оформляем предзаказ...';
+          const order = await apiFetch('/api/v1/orders/', {
+            method: 'POST',
+            body: JSON.stringify({ booking_id: booking.id }),
+          });
+          for (const [pid, qty] of cartItems) {
+            await apiFetch(`/api/v1/orders/${order.id}/items`, {
+              method: 'POST',
+              body: JSON.stringify({ product_id: parseInt(pid), quantity: qty }),
+            });
+          }
+        }
+
+        tg?.HapticFeedback?.notificationOccurred('success');
+        showBookingSuccess(cartItems);
+      } catch (e) {
+        tg?.HapticFeedback?.notificationOccurred('error');
+        alert('Ошибка: ' + e.message);
+        btn.disabled = false;
+        skipBtn.disabled = false;
+        updatePreorderUI();
+      }
+    }
+
+    function showBookingSuccess(cartItems) {
+      const subEl    = document.getElementById('success-sub');
+      const preBlock = document.getElementById('success-preorder-block');
+      state.cart = {};
+      screenStack = [];
+
+      if (state.openEnded) {
+        subEl.textContent = 'Оплата по факту — цена рассчитается когда завершите сеанс ⏱️';
+      } else if (cartItems.length > 0) {
+        subEl.textContent = 'Предзаказ оформлен — всё будет готово к вашему приходу 🍿';
+        let html = `<div style="font-size:12px; color:var(--hint); font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px;">Предзаказ</div>`;
+        let total = 0;
+        cartItems.forEach(([pid, qty]) => {
+          const p = state.products.find(p => p.id == pid);
+          const sub = qty * parseFloat(p.price);
+          total += sub;
+          html += `<div class="order-item-row"><span>${esc(p.name)} × ${qty}</span><span>${fmt(sub)} ₸</span></div>`;
+        });
+        html += `<div class="order-total"><span>Итого</span><span>${fmt(total)} ₸</span></div>`;
+        preBlock.innerHTML = html;
+        preBlock.style.display = 'block';
+      } else {
+        subEl.textContent = 'Ждём вас! Заказать еду и напитки можно во время сеанса.';
+        preBlock.style.display = 'none';
+      }
+
+      showScreen('booking-success');
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // SCREEN: MY BOOKINGS
+    // ══════════════════════════════════════════════════════════════════
+    async function showBookings(tab) {
+      screenStack = [];
+      showScreen('bookings');
+      if (tab) {
+        state.bookingTab = tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const tabs = { active: 0, pending: 1, history: 2 };
+        document.querySelectorAll('.tab')[tabs[tab]]?.classList.add('active');
+      }
+      await loadBookings();
+    }
+
+    async function loadBookings() {
+      const el = document.getElementById('bookings-list');
+      el.innerHTML = '<div class="spinner"><div class="spin-icon"></div></div>';
+      try {
+        state.bookings = await apiFetch(`/api/v1/bookings/user/${state.user.id}`);
+        renderBookingsList();
+      } catch (e) {
+        el.innerHTML = `<div class="empty">Ошибка загрузки</div>`;
+      }
+    }
+
+    function setBookingTab(tab, btn) {
+      state.bookingTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      renderBookingsList();
+    }
+
+    function renderBookingsList() {
+      const el = document.getElementById('bookings-list');
+      let list = state.bookings;
+
+      if (state.bookingTab === 'active') {
+        list = list.filter(b => b.status === 'active');
+      } else if (state.bookingTab === 'pending') {
+        list = list.filter(b => b.status === 'pending');
+      } else {
+        list = list.filter(b => ['completed', 'cancelled'].includes(b.status));
+      }
+
+      if (list.length === 0) {
+        const msgs = { active: 'Нет активных сеансов', pending: 'Нет ожидающих броней', history: 'История пуста' };
+        el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>${msgs[state.bookingTab]}</div>`;
+        return;
+      }
+
+      el.innerHTML = list.map(b => {
+        const hall = state.halls.find(h => h.id === b.hall_id) || { name: `Зал #${b.hall_id}` };
+        const start = new Date(b.start_time);
+        const end = new Date(b.end_time);
+        const canOrder = b.status === 'active';
+        const canCancel = b.status === 'pending';
+        return `
+      <div class="card" style="${canOrder ? 'cursor:pointer;border-color:rgba(34,197,94,0.3);' : ''}
+                                ${canCancel ? 'border-color:rgba(245,158,11,0.25);' : ''}"
+           ${canOrder ? `onclick="openActiveBooking(${b.id})"` : ''}>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div class="card-title">${esc(hall.name)}</div>
+          <span class="badge badge-${b.status}">${statusLabel(b.status)}</span>
+        </div>
+        <div class="info-row"><span class="info-label">Дата</span><span class="info-value">${start.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long' })}</span></div>
+        <div class="info-row"><span class="info-label">Время</span><span class="info-value">${fmtT(start)} – ${fmtT(end)}</span></div>
+        <div class="info-row"><span class="info-label">Стоимость</span><span class="info-value">${b.total_price ? fmt(b.total_price) + ' ₸' : '—'}</span></div>
+        <div id="preorder-badge-${b.id}"></div>
+        ${canOrder ? `<div style="margin-top:10px;"><button class="btn btn-primary" onclick="openActiveBooking(${b.id})">🛒 Заказать товары</button></div>` : ''}
+        ${canCancel ? `<div style="margin-top:10px;"><button class="btn btn-danger" onclick="cancelBooking(${b.id}, event)">✕ Отменить бронь</button></div>` : ''}
+      </div>`;
+      }).join('');
+
+      // Подгружаем предзаказы для pending броней
+      list.filter(b => b.status === 'pending').forEach(b => loadPreorderBadge(b.id));
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // SCREEN: ACTIVE BOOKING (ORDER PRODUCTS)
+    // ══════════════════════════════════════════════════════════════════
+    async function openActiveBooking(bookingId) {
+      const booking = state.bookings.find(b => b.id === bookingId);
+      if (!booking) return;
+      state.activeBooking = booking;
+      state.cart = {};
+      pushScreen('active-booking');
+
+      const hall = state.halls.find(h => h.id === booking.hall_id) || { name: `Зал #${booking.hall_id}` };
+      document.getElementById('active-hall-name').textContent = hall.name;
+
+      // Booking info
+      const start = new Date(booking.start_time);
+      const end = new Date(booking.end_time);
+      document.getElementById('active-booking-info').innerHTML = `
+    <div class="info-row"><span class="info-label">Зал</span><span class="info-value">${esc(hall.name)}</span></div>
+    <div class="info-row"><span class="info-label">Время</span><span class="info-value">${fmtT(start)} – ${fmtT(end)}</span></div>
+    <div class="info-row"><span class="info-label">Стоимость</span><span class="info-value">${booking.total_price ? fmt(booking.total_price) + ' ₸' : '—'}</span></div>
+  `;
+
+      // Start countdown
+      if (state.timerInterval) clearInterval(state.timerInterval);
+      updateTimer(booking.end_time);
+      state.timerInterval = setInterval(() => updateTimer(booking.end_time), 1000);
+
+      // Load existing orders & render catalog
+      renderCatalog();
+      loadExistingOrders(booking.id);
+    }
+
+    async function loadPreorderBadge(bookingId) {
+      try {
+        const orders = await apiFetch(`/api/v1/orders/booking/${bookingId}`);
+        const badge = document.getElementById(`preorder-badge-${bookingId}`);
+        if (!badge) return;
+        const pending = orders.filter(o => o.status === 'pending');
+        if (!pending.length) return;
+        const total = pending.reduce((s, o) =>
+          s + (o.items || []).reduce((ss, i) => ss + i.quantity * parseFloat(i.price_at_order), 0), 0);
+        badge.innerHTML = `<div style="margin-top:8px; padding:8px 10px; border-radius:8px;
+          background:rgba(108,99,255,0.12); border:1px solid rgba(108,99,255,0.25);
+          font-size:13px; color:var(--link); display:flex; align-items:center; gap:6px;">
+          🍿 Предзаказ оформлен${total > 0 ? ' — ' + fmt(total) + ' ₸' : ''}
+        </div>`;
+      } catch { /* тихо */ }
+    }
+
+    async function loadExistingOrders(bookingId) {
+      const block = document.getElementById('existing-orders-block');
+      const list  = document.getElementById('existing-orders-list');
+      try {
+        const orders = await apiFetch(`/api/v1/orders/booking/${bookingId}`);
+        const active = orders.filter(o => o.status === 'pending');
+        if (!active.length) { block.style.display = 'none'; return; }
+
+        block.style.display = 'block';
+        list.innerHTML = active.map(o => {
+          const isPreorder = !o.items || o.items.length === 0;
+          const items = (o.items || []).map(i => {
+            const p = state.products.find(p => p.id === i.product_id) || { name: `#${i.product_id}`, price: i.price_at_order };
+            return `<div class="order-item-row">
+              <span>${esc(p.name)} × ${i.quantity}</span>
+              <span style="font-weight:600;">${fmt(i.quantity * parseFloat(i.price_at_order))} ₸</span>
+            </div>`;
+          });
+          const total = (o.items || []).reduce((s, i) => s + i.quantity * parseFloat(i.price_at_order), 0);
+          const tag = o.items?.length ? '' : ' <span style="font-size:11px;color:var(--link);">(предзаказ)</span>';
+          return `<div class="card" style="margin-bottom:8px;">
+            <div style="font-size:12px; color:var(--hint); font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px;">
+              Заказ #${o.id}${tag}
+            </div>
+            ${items.join('')}
+            ${total > 0 ? `<div class="order-total"><span>Итого</span><span>${fmt(total)} ₸</span></div>` : ''}
+          </div>`;
+        }).join('');
+      } catch { block.style.display = 'none'; }
+    }
+
+    function backToActiveBooking() {
+      if (state.activeBooking) {
+        state.cart = {};
+        showScreen('active-booking');
+        // Перезапускаем таймер (он был остановлен после отправки заказа)
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        updateTimer(state.activeBooking.end_time);
+        state.timerInterval = setInterval(() => updateTimer(state.activeBooking.end_time), 1000);
+        renderCatalog();
+      } else {
+        showHalls();
+      }
+    }
+
+    function updateTimer(endTime) {
+      const el = document.getElementById('active-timer');
+      if (!el) return;
+      const diff = new Date(endTime) - Date.now();
+      if (diff <= 0) {
+        el.textContent = 'Время вышло';
+        el.className = 'timer-val timer-expired';
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      el.textContent = h > 0
+        ? `${h}:${pad(m)}:${pad(s)}`
+        : `${m}:${pad(s)}`;
+      el.className = 'timer-val ' + (diff < 600000 ? 'timer-warning' : 'timer-ok');
+    }
+
+    function renderCatalog() {
+      const el = document.getElementById('product-catalog');
+      el.innerHTML = renderGroupedProducts(state.products, 'qty');
+    }
+
+    function cartInc(productId) {
+      state.cart[productId] = (state.cart[productId] || 0) + 1;
+      document.getElementById(`qty-${productId}`).textContent = state.cart[productId];
+      tg?.HapticFeedback?.selectionChanged();
+      updateCartUI();
+    }
+
+    function cartDec(productId) {
+      if (!state.cart[productId]) return;
+      state.cart[productId]--;
+      if (state.cart[productId] === 0) delete state.cart[productId];
+      document.getElementById(`qty-${productId}`).textContent = state.cart[productId] || 0;
+      tg?.HapticFeedback?.selectionChanged();
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const items = Object.entries(state.cart).filter(([, q]) => q > 0);
+      const footer = document.getElementById('cart-footer');
+      const summaryBlock = document.getElementById('cart-summary-block');
+      const summaryEl = document.getElementById('cart-summary');
+      const orderBtn = document.getElementById('btn-place-order');
+
+      if (items.length === 0) {
+        footer.style.display = 'none';
+        summaryBlock.style.display = 'none';
+        return;
+      }
+
+      let total = 0;
+      const rows = items.map(([pid, qty]) => {
+        const p = state.products.find(p => p.id == pid);
+        const subtotal = qty * parseFloat(p.price);
+        total += subtotal;
+        return `<div class="order-item-row">
+      <span>${esc(p.name)} × ${qty}</span>
+      <span style="font-weight:600;">${fmt(subtotal)} ₸</span>
+    </div>`;
+      });
+      rows.push(`<div class="order-total"><span>Итого</span><span>${fmt(total)} ₸</span></div>`);
+      summaryEl.innerHTML = rows.join('');
+      summaryBlock.style.display = 'block';
+      orderBtn.textContent = `Отправить заказ — ${fmt(total)} ₸`;
+      footer.style.display = 'block';
+    }
+
+    async function placeOrder() {
+      const btn = document.getElementById('btn-place-order');
+      btn.disabled = true;
+      btn.textContent = 'Отправляем...';
+      try {
+        // 1. Create order
+        const order = await apiFetch('/api/v1/orders/', {
+          method: 'POST',
+          body: JSON.stringify({ booking_id: state.activeBooking.id }),
+        });
+        // 2. Add items sequentially
+        for (const [productId, qty] of Object.entries(state.cart)) {
+          if (qty > 0) {
+            await apiFetch(`/api/v1/orders/${order.id}/items`, {
+              method: 'POST',
+              body: JSON.stringify({ product_id: parseInt(productId), quantity: qty }),
+            });
+          }
+        }
+        tg?.HapticFeedback?.notificationOccurred('success');
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.cart = {};
+        showScreen('order-sent');
+      } catch (e) {
+        tg?.HapticFeedback?.notificationOccurred('error');
+        alert('Ошибка: ' + e.message);
+        btn.disabled = false;
+        updateCartUI();
+      }
+    }
+
+
+    // ======================================================================
+    // HELPERS
+    // ======================================================================
+    async function cancelBooking(bookingId, event) {
+      event?.stopPropagation();
+      if (!confirm('Отменить бронь?')) return;
+      try {
+        await apiFetch(`/api/v1/bookings/${bookingId}/cancel`, { method: 'POST' });
+        tg?.HapticFeedback?.notificationOccurred('success');
+        await loadBookings();
+      } catch (e) {
+        alert('Ошибка: ' + e.message);
+      }
+    }
+
+    function fmtT(date) {
+      return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function statusLabel(status) {
+      return { pending: 'Ожидает', active: 'Активна', completed: 'Завершена', cancelled: 'Отменена' }[status] ?? status;
+    }
+
+    function toDateTime(date, timeStr) {
+      const [h, m] = timeStr.split(':').map(Number);
+      const d = new Date(date);
+      d.setHours(h, m, 0, 0);
+      return d;
+    }
+
+    function esc(str) {
+      return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function fmt(n) {
+      return Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function pad(n) {
+      return String(n).padStart(2, '0');
+    }
+
+    function showError(msg) {
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;color:var(--text);flex-direction:column;gap:12px;"><div style="font-size:48px;">\u26a0\ufe0f</div><div style="font-size:16px;">' + String(msg).replace(/</g,'&lt;') + '</div></div>';
+    }
+
+    // ======================================================================
+    // START
+    // ======================================================================
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

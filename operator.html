@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kinoroom — Панель оператора</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3150;
+      --accent: #6c63ff;
+      --accent-hover: #7c74ff;
+      --green: #22c55e;
+      --green-hover: #16a34a;
+      --red: #ef4444;
+      --red-hover: #dc2626;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header h1 span { color: var(--accent); }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .last-update { font-size: 12px; color: var(--text-muted); }
+    .btn-refresh {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background .15s;
+    }
+    .btn-refresh:hover { background: var(--border); }
+
+    /* ── Config bar ── */
+    .config-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .config-bar input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      width: 220px;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      gap: 4px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Tab content ── */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Sessions layout ── */
+    .sessions-wrap {
+      padding: 20px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .sessions-panel {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .sessions-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text-muted);
+    }
+
+    .sessions-panel--pending .sessions-panel-header {
+      border-left: 4px solid var(--yellow);
+      background: rgba(245,158,11,.05);
+      color: var(--yellow);
+    }
+
+    .sessions-panel--active .sessions-panel-header {
+      border-left: 4px solid var(--green);
+      background: rgba(34,197,94,.05);
+      color: var(--green);
+    }
+
+    .sessions-panel-body {
+      padding: 16px 20px;
+    }
+
+    .grid-1 {
+      padding: 20px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    .badge-green { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.3); color: var(--green); }
+    .badge-yellow { background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.3); color: var(--yellow); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      transition: border-color .15s;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card:last-child { margin-bottom: 0; }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .hall-name { font-size: 16px; font-weight: 600; }
+    .status-badge {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .status-pending  { background: rgba(245,158,11,.15); color: var(--yellow); }
+    .status-active   { background: rgba(34,197,94,.15);  color: var(--green); }
+    .status-inactive { background: rgba(148,163,184,.1); color: var(--text-muted); }
+
+    .card-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 3px; }
+
+    .timer {
+      font-size: 22px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin: 8px 0;
+    }
+    .timer.ok      { color: var(--green); }
+    .timer.warning { color: var(--yellow); }
+    .timer.expired { color: var(--red); }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .08s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .btn-success { background: var(--green); color: #000; }
+    .btn-success:hover:not(:disabled) { background: var(--green-hover); }
+
+    .btn-danger { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+    .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.25); }
+
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover:not(:disabled) { background: var(--surface2); }
+
+    /* ── Orders ── */
+    .orders-section { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+    .orders-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .order-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .order-card:last-child { margin-bottom: 0; }
+    .order-meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); }
+    .order-id { font-weight: 700; font-size: 13px; color: var(--text); }
+    .items-list { display: flex; flex-direction: column; gap: 4px; }
+    .item-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; gap: 8px; }
+    .item-name { color: var(--text); flex: 1; }
+    .item-qty  { color: var(--text-muted); white-space: nowrap; }
+    .item-stock { font-size: 11px; padding: 1px 6px; border-radius: 4px; white-space: nowrap; font-weight: 600; }
+    .item-stock-ok   { background: rgba(34,197,94,.15); color: #22c55e; }
+    .item-stock-low  { background: rgba(245,158,11,.15); color: var(--yellow); }
+    .item-stock-none { background: rgba(239,68,68,.15);  color: var(--red); }
+    .item-price { color: var(--text-muted); min-width: 70px; text-align: right; }
+    .order-actions { display: flex; gap: 8px; }
+
+    /* ── Empty states ── */
+    .empty { text-align: center; padding: 36px 20px; color: var(--text-muted); font-size: 14px; }
+    .empty-icon { font-size: 34px; margin-bottom: 8px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      z-index: 200;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { border-color: var(--green); }
+    #toast.error   { border-color: var(--red); }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+    .loading { text-align: center; padding: 48px; color: var(--text-muted); }
+
+    /* ── Stock tab ── */
+
+    /* ── Inventory table ── */
+    .stock-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 16px; text-align: left; font-size: 13px; }
+    th {
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      border-bottom: 1px solid var(--border);
+    }
+    td { border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(108,99,255,.04); }
+
+    .qty-block { display: flex; align-items: baseline; gap: 4px; }
+    .qty-num { font-size: 18px; font-weight: 700; line-height: 1; }
+    .qty-unit { font-size: 11px; color: var(--text-muted); }
+    .qty-ok   .qty-num { color: var(--green); }
+    .qty-low  .qty-num { color: var(--yellow); }
+    .qty-zero .qty-num { color: var(--red); }
+    .qty-neutral .qty-num { color: var(--text); }
+
+    .reserve-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(245,158,11,.12);
+      border: 1px solid rgba(245,158,11,.25);
+      color: var(--yellow);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    /* ── Movement history ── */
+    .mov-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .mov-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+    .mov-filter-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .mov-filter-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .mov-filter-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(108,99,255,.1); }
+
+    .movements-list { display: flex; flex-direction: column; gap: 6px; }
+    .mov-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: grid;
+      grid-template-columns: 100px 1fr auto auto;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .mov-type {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      text-align: center;
+    }
+    .mov-receive        { background: rgba(34,197,94,.15);  color: var(--green);  border: 1px solid rgba(34,197,94,.2); }
+    .mov-reserve        { background: rgba(245,158,11,.15); color: var(--yellow); border: 1px solid rgba(245,158,11,.2); }
+    .mov-write_off      { background: rgba(239,68,68,.15);  color: var(--red);    border: 1px solid rgba(239,68,68,.2); }
+    .mov-cancel_reserve { background: rgba(108,99,255,.15); color: var(--accent); border: 1px solid rgba(108,99,255,.2); }
+
+    .mov-product { font-weight: 500; }
+    .mov-product small { display: block; color: var(--text-muted); font-size: 11px; margin-top: 1px; }
+
+    .mov-qty { font-size: 15px; font-weight: 700; text-align: right; min-width: 44px; }
+    .mov-qty.positive { color: var(--green); }
+    .mov-qty.negative { color: var(--red); }
+
+    .mov-meta { color: var(--text-muted); font-size: 11px; text-align: right; white-space: nowrap; }
+
+    @media (max-width: 600px) {
+      .mov-row { grid-template-columns: 90px 1fr auto; }
+      .mov-meta { display: none; }
+    }
+
+    /* ── History tab ── */
+    .history-session {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .history-session-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      cursor: pointer;
+      gap: 12px;
+      transition: background .15s;
+    }
+    .history-session-header:hover { background: rgba(255,255,255,.03); }
+    .history-session-left  { display: flex; flex-direction: column; gap: 3px; }
+    .history-session-hall  { font-weight: 700; font-size: 15px; }
+    .history-session-meta  { font-size: 12px; color: var(--text-muted); }
+    .history-session-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .history-duration {
+      font-size: 12px; color: var(--text-muted);
+      background: rgba(255,255,255,.05);
+      border-radius: 20px; padding: 3px 10px;
+    }
+    .history-total {
+      font-weight: 700; font-size: 15px; color: var(--accent);
+    }
+    .history-chevron { font-size: 12px; color: var(--text-muted); transition: transform .2s; }
+    .history-session.open .history-chevron { transform: rotate(180deg); }
+    .history-session-body {
+      display: none;
+      padding: 0 18px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .history-session.open .history-session-body { display: block; }
+    .history-cost-row {
+      display: flex; gap: 24px; padding: 12px 0;
+      border-bottom: 1px solid var(--border); margin-bottom: 12px;
+    }
+    .history-cost-block { display: flex; flex-direction: column; gap: 2px; }
+    .history-cost-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+    .history-cost-value { font-size: 14px; font-weight: 600; }
+    .history-orders-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .history-order-card {
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .history-order-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px;
+      font-size: 12px; color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .history-order-items { padding: 8px 12px; }
+    .history-order-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 0;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+    .history-order-item:last-child { border-bottom: none; }
+    .history-order-item-name { flex: 1; }
+    .history-order-item-qty  { color: var(--text-muted); font-size: 12px; margin: 0 12px; }
+    .history-order-item-price { font-weight: 600; color: var(--accent); }
+    .history-empty { text-align: center; padding: 48px 24px; color: var(--text-muted); font-size: 14px; }
+
+    /* ── Forms / Management tab ── */
+    .mgmt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 800px) { .mgmt-grid { grid-template-columns: 1fr; } }
+
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .form-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color .15s;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .form-group textarea { resize: vertical; min-height: 70px; font-family: inherit; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .list-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 16px;
+    }
+    .list-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      gap: 8px;
+    }
+    .list-item:last-child { border-bottom: none; }
+    .list-item-name { font-weight: 600; }
+    .list-item-meta { color: var(--text-muted); font-size: 12px; }
+    .list-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ── Receive stock form ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 440px;
+      margin: 16px;
+    }
+    .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-switch input { display: none; }
+    .toggle-track {
+      width: 38px; height: 22px;
+      background: var(--border);
+      border-radius: 11px;
+      position: relative;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px; left: 3px;
+      transition: transform .2s;
+    }
+    .toggle-switch input:checked + .toggle-track { background: var(--green); }
+    .toggle-switch input:checked + .toggle-track::after { transform: translateX(16px); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="status-dot"></div>
+  <h1><span>Kinoroom</span> — Панель оператора</h1>
+  <div class="header-right">
+    <span class="last-update" id="lastUpdate">Загрузка...</span>
+    <button class="btn-refresh" onclick="refresh()">⟳ Обновить</button>
+  </div>
+</header>
+
+<div class="config-bar">
+  <span>API:</span>
+  <input type="text" id="apiUrl" value="" onchange="refresh()" />
+  <span>Авто-обновление каждые 30 сек</span>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('sessions')">🎮 Сеансы</button>
+  <button class="tab-btn" onclick="switchTab('stock')">📦 Склад</button>
+  <button class="tab-btn" onclick="switchTab('menu')">🍿 Меню</button>
+  <button class="tab-btn" onclick="switchTab('loyalty')">⭐ Лояльность</button>
+  <button class="tab-btn" onclick="switchTab('history')">📋 История</button>
+  <button class="tab-btn" onclick="switchTab('mgmt')">⚙ Управление</button>
+</div>
+
+<!-- ══════════════════════ TAB: SESSIONS ══════════════════════ -->
+<div class="tab-content active" id="tab-sessions">
+  <div class="sessions-wrap">
+
+    <!-- Ожидают активации -->
+    <div class="sessions-panel sessions-panel--pending">
+      <div class="sessions-panel-header">
+        ⏳ Ожидают активации
+        <span class="badge badge-yellow" id="pendingCount">0</span>
+      </div>
+      <div class="sessions-panel-body">
+        <div id="pendingList"><div class="loading">Загрузка...</div></div>
+      </div>
+    </div>
+
+    <!-- Активные сеансы -->
+    <div class="sessions-panel sessions-panel--active">
+      <div class="sessions-panel-header">
+        🟢 Активные сеансы
+        <span class="badge badge-green" id="activeCount">0</span>
+      </div>
+      <div class="sessions-panel-body">
+        <div id="activeList"><div class="loading">Загрузка...</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════ TAB: STOCK ══════════════════════ -->
+<div class="tab-content" id="tab-stock">
+  <div class="grid-1">
+
+    <!-- Inventory table -->
+    <div>
+      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Остатки</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline" style="font-size:12px;padding:5px 12px" onclick="openDeliveryHistory()">📋 История поставок</button>
+          <button class="btn btn-outline" style="font-size:12px;padding:5px 12px" onclick="loadStock()">⟳ Обновить</button>
+        </div>
+      </div>
+      <div class="stock-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Товар</th>
+              <th>Всего на складе</th>
+              <th>В резерве</th>
+              <th>Доступно</th>
+              <th>Последний приход</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="stockTableBody">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Movement history -->
+    <div class="mov-header">
+      <div class="section-title" style="margin:0">📋 История движений</div>
+      <div class="mov-filters">
+        <button class="mov-filter-btn active" onclick="filterMovements('all', this)">Все</button>
+        <button class="mov-filter-btn" onclick="filterMovements('receive', this)">📦 Приход</button>
+        <button class="mov-filter-btn" onclick="filterMovements('write_off', this)">✂️ Списание</button>
+        <button class="mov-filter-btn" onclick="filterMovements('reserve', this)">🔒 Резерв</button>
+        <button class="mov-filter-btn" onclick="filterMovements('cancel_reserve', this)">↩️ Снят резерв</button>
+      </div>
+    </div>
+    <div id="movementsList">
+      <div class="empty"><div class="empty-icon">📋</div>Загрузка...</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════ MODAL: Приход товара ══════════════════════ -->
+<div class="modal-overlay" id="receiveModal">
+  <div class="modal">
+    <h3>📦 Приход товара</h3>
+    <div class="form-group">
+      <label>Товар</label>
+      <input type="text" id="receiveProductName" readonly style="background:var(--surface2);cursor:default" />
+      <input type="hidden" id="receiveProductId" />
+    </div>
+    <div class="form-group">
+      <label>Количество</label>
+      <input type="number" id="receiveQty" min="1" value="1" />
+    </div>
+    <div class="form-group">
+      <label>Примечание (необязательно)</label>
+      <input type="text" id="receiveNote" placeholder="Например: поставка от 15.04" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('receiveModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitReceive()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MODAL: Доплата к сеансу ══════════════════════ -->
+<div class="modal-overlay" id="extraChargeModal">
+  <div class="modal">
+    <h3>💰 Доплата к сеансу</h3>
+    <input type="hidden" id="extraChargeBookingId" />
+    <div class="form-group">
+      <label>Сумма доплаты (₸)</label>
+      <input type="number" id="extraChargeAmount" min="1" step="1" placeholder="500" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('extraChargeModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitExtraCharge()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MODAL: История поставок ══════════════════════ -->
+<div class="modal-overlay" id="deliveryHistoryModal">
+  <div class="modal" style="max-width:680px;width:100%">
+    <h3>📋 История поставок</h3>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <input type="date" id="deliveryDateFilter" onchange="renderDeliveryHistory()"
+        style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;flex:1;min-width:160px;color-scheme:dark" />
+      <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="document.getElementById('deliveryDateFilter').value='';renderDeliveryHistory()">Все даты</button>
+      <select id="deliverySortOrder" onchange="renderDeliveryHistory()"
+        style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px">
+        <option value="desc">Сначала новые</option>
+        <option value="asc">Сначала старые</option>
+      </select>
+    </div>
+    <div id="deliveryHistoryList" style="max-height:460px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('deliveryHistoryModal')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ TAB: MENU ══════════════════════ -->
+<div class="tab-content" id="tab-menu">
+  <div class="grid-1">
+    <div class="mgmt-grid">
+
+      <!-- Категории -->
+      <div>
+        <div class="form-card">
+          <h3>➕ Новая категория</h3>
+          <div class="form-row">
+            <div class="form-group" style="flex:0 0 70px">
+              <label>Эмодзи</label>
+              <input type="text" id="catEmoji" placeholder="🍟" maxlength="4" style="text-align:center;font-size:20px" />
+            </div>
+            <div class="form-group">
+              <label>Название</label>
+              <input type="text" id="catName" placeholder="Снеки" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Родительская категория (необязательно)</label>
+            <select id="catParent"><option value="">— Корневая категория —</option></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Порядок (меньше = выше)</label>
+              <input type="number" id="catPosition" value="0" min="0" />
+            </div>
+            <div class="form-group" style="justify-content:flex-end;padding-top:22px">
+              <label class="toggle-switch">
+                <input type="checkbox" id="catActive" checked />
+                <div class="toggle-track"></div>
+                <span>Активна</span>
+              </label>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="createCategory()">Создать категорию</button>
+        </div>
+        <div class="list-card">
+          <h3>Категории <span class="badge" id="catsCountBadge">0</span></h3>
+          <div id="catsList"><div class="loading" style="padding:20px">Загрузка...</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ TAB: LOYALTY ══════════════════════ -->
+<div class="tab-content" id="tab-loyalty">
+  <div class="grid-1">
+    <div class="mgmt-grid">
+
+      <!-- Создать правило -->
+      <div>
+        <div class="form-card">
+          <h3>➕ Новое правило</h3>
+          <div class="form-group">
+            <label>Каждый N-й визит</label>
+            <input type="number" id="loyVisits" placeholder="5" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Тип награды</label>
+            <select id="loyType" onchange="onLoyTypeChange()">
+              <option value="discount">🎁 Скидка на аренду (%)</option>
+              <option value="free_booking">🎉 Бесплатная аренда зала</option>
+            </select>
+          </div>
+          <div class="form-group" id="loyValueGroup">
+            <label>Размер скидки (%)</label>
+            <input type="number" id="loyValue" placeholder="20" min="0" max="100" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Описание (покажем клиенту)</label>
+            <input type="text" id="loyDesc" placeholder="Каждый 5-й визит — скидка 20%!" />
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="createLoyaltyRule()">Создать правило</button>
+        </div>
+        <div class="form-card" style="background:rgba(108,99,255,.07);border-color:rgba(108,99,255,.3)">
+          <h3 style="color:var(--accent)">ℹ️ Как работает</h3>
+          <p style="font-size:13px;color:var(--text-muted);line-height:1.6">
+            Система считает завершённые визиты каждого клиента.<br>
+            Если следующий визит кратен <b>N</b> — при бронировании автоматически применяется награда.<br>
+            <b>Пример:</b> N=5, скидка 20% → 5-й, 10-й, 15-й визит = −20% к аренде.<br>
+            <b>Бесплатная аренда</b> → цена = 0 ₸.
+          </p>
+        </div>
+      </div>
+
+      <!-- Список правил -->
+      <div>
+        <div class="list-card">
+          <h3>Правила лояльности <span class="badge" id="loyRulesCountBadge">0</span></h3>
+          <div id="loyRulesList"><div class="loading" style="padding:20px">Загрузка...</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ TAB: HISTORY ══════════════════════ -->
+<div class="tab-content" id="tab-history">
+  <div class="grid-1">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="section-title" style="margin-bottom:0">
+        📋 История сеансов
+        <span class="badge" id="historyCount" style="background:rgba(255,255,255,.08);color:var(--text-muted)">0</span>
+      </div>
+      <button class="btn btn-outline" style="font-size:12px" onclick="loadHistory()">🔄 Обновить</button>
+    </div>
+    <div id="historyList">
+      <div class="history-empty">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ TAB: MANAGEMENT ══════════════════════ -->
+<div class="tab-content" id="tab-mgmt">
+  <div class="grid-1">
+    <div class="mgmt-grid">
+
+      <!-- Залы -->
+      <div>
+        <div class="form-card">
+          <h3>➕ Новый зал</h3>
+          <div class="form-group">
+            <label>Название зала</label>
+            <input type="text" id="hallName" placeholder="Зал 1" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Цена за час (₸)</label>
+              <input type="number" id="hallPrice" placeholder="500" min="0" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label>Мест (вместимость)</label>
+              <input type="number" id="hallCapacity" placeholder="8" min="1" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Описание</label>
+            <textarea id="hallDesc" placeholder="Игровой зал с PS5, 65'' телевизором..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="toggle-switch">
+              <input type="checkbox" id="hallActive" checked />
+              <div class="toggle-track"></div>
+              <span>Активен (доступен для бронирования)</span>
+            </label>
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="createHall()">Создать зал</button>
+        </div>
+
+        <div class="list-card">
+          <h3>Все залы <span class="badge" id="hallsCountBadge">0</span></h3>
+          <div id="hallsList"><div class="loading" style="padding:20px">Загрузка...</div></div>
+        </div>
+      </div>
+
+      <!-- Товары -->
+      <div>
+        <div class="form-card">
+          <h3>➕ Новый товар</h3>
+          <div class="form-group">
+            <label>Название товара</label>
+            <input type="text" id="prodName" placeholder="Coca-Cola" />
+          </div>
+          <div class="form-group">
+            <label>Категория</label>
+            <select id="prodCategory"><option value="">— Без категории —</option></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Цена продажи (₸)</label>
+              <input type="number" id="prodPrice" placeholder="150" min="0" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label>Себестоимость (₸)</label>
+              <input type="number" id="prodCost" placeholder="80" min="0" step="0.01" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Единица измерения</label>
+              <input type="text" id="prodUnit" placeholder="шт" />
+            </div>
+            <div class="form-group">
+              <label>Артикул (SKU, необязательно)</label>
+              <input type="text" id="prodSku" placeholder="COLA-500" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="toggle-switch">
+              <input type="checkbox" id="prodActive" checked />
+              <div class="toggle-track"></div>
+              <span>Активен (доступен для заказа)</span>
+            </label>
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="createProduct()">Создать товар</button>
+        </div>
+
+        <div class="list-card">
+          <h3>Все товары <span class="badge" id="prodsCountBadge">0</span></h3>
+          <div id="prodsList"><div class="loading" style="padding:20px">Загрузка...</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MODAL: Редактировать товар ══════════════════════ -->
+<div class="modal-overlay" id="editProductModal">
+  <div class="modal">
+    <h3>✏️ Редактировать товар</h3>
+    <input type="hidden" id="editProductId" />
+    <div class="form-group">
+      <label>Название</label>
+      <input type="text" id="editProdName" />
+    </div>
+    <div class="form-group">
+      <label>Категория</label>
+      <select id="editProdCategory"><option value="">— Без категории —</option></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Цена продажи (₸)</label>
+        <input type="number" id="editProdPrice" min="0" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label>Себестоимость (₸)</label>
+        <input type="number" id="editProdCost" min="0" step="0.01" placeholder="необязательно" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Единица</label>
+        <input type="text" id="editProdUnit" />
+      </div>
+      <div class="form-group">
+        <label>Артикул (SKU)</label>
+        <input type="text" id="editProdSku" placeholder="необязательно" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="toggle-switch">
+        <input type="checkbox" id="editProdActive" />
+        <div class="toggle-track"></div>
+        <span>Активен</span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('editProductModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitEditProduct()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MODAL: Редактировать категорию ══════════════════════ -->
+<div class="modal-overlay" id="editCategoryModal">
+  <div class="modal">
+    <h3>✏️ Редактировать категорию</h3>
+    <input type="hidden" id="editCatId" />
+    <div class="form-row">
+      <div class="form-group" style="flex:0 0 70px">
+        <label>Эмодзи</label>
+        <input type="text" id="editCatEmoji" maxlength="4" style="text-align:center;font-size:20px" />
+      </div>
+      <div class="form-group">
+        <label>Название</label>
+        <input type="text" id="editCatName" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Родительская категория</label>
+      <select id="editCatParent"><option value="">— Корневая категория —</option></select>
+    </div>
+    <div class="form-group">
+      <label>Порядок</label>
+      <input type="number" id="editCatPosition" min="0" />
+    </div>
+    <div class="form-group">
+      <label class="toggle-switch">
+        <input type="checkbox" id="editCatActive" />
+        <div class="toggle-track"></div>
+        <span>Активна</span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('editCategoryModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitEditCategory()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MODAL: Привязать товар к категории ══════════════════════ -->
+<div class="modal-overlay" id="quickAddProductModal">
+  <div class="modal">
+    <h3>➕ Добавить блюдо в категорию</h3>
+    <input type="hidden" id="quickProdCatId" />
+    <div class="form-group">
+      <label id="quickProdCatLabel" style="font-size:12px;color:var(--text-muted)">Категория: —</label>
+    </div>
+    <div class="form-group">
+      <label>Выберите товар</label>
+      <select id="quickProdSelect" style="width:100%">
+        <option value="">— Загрузка... —</option>
+      </select>
+    </div>
+    <div id="quickProdInfo" style="font-size:12px;color:var(--text-muted);padding:4px 0 0;min-height:18px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('quickAddProductModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitQuickAddProduct()">Привязать</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MODAL: Редактировать правило лояльности ══════════════════════ -->
+<div class="modal-overlay" id="editLoyaltyModal">
+  <div class="modal">
+    <h3>✏️ Редактировать правило</h3>
+    <input type="hidden" id="editLoyId" />
+    <div class="form-group">
+      <label>Каждый N-й визит</label>
+      <input type="number" id="editLoyVisits" min="1" />
+    </div>
+    <div class="form-group">
+      <label>Тип награды</label>
+      <select id="editLoyType" onchange="onEditLoyTypeChange()">
+        <option value="discount">🎁 Скидка на аренду (%)</option>
+        <option value="free_booking">🎉 Бесплатная аренда зала</option>
+      </select>
+    </div>
+    <div class="form-group" id="editLoyValueGroup">
+      <label>Размер скидки (%)</label>
+      <input type="number" id="editLoyValue" min="0" max="100" step="0.01" />
+    </div>
+    <div class="form-group">
+      <label>Описание</label>
+      <input type="text" id="editLoyDesc" />
+    </div>
+    <div class="form-group">
+      <label class="toggle-switch">
+        <input type="checkbox" id="editLoyActive" />
+        <div class="toggle-track"></div>
+        <span>Активно</span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('editLoyaltyModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitEditLoyalty()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MODAL: Редактировать зал ══════════════════════ -->
+<div class="modal-overlay" id="editHallModal">
+  <div class="modal">
+    <h3>✏️ Редактировать зал</h3>
+    <input type="hidden" id="editHallId" />
+    <div class="form-group">
+      <label>Название</label>
+      <input type="text" id="editHallName" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Цена за час (₸)</label>
+        <input type="number" id="editHallPrice" min="0" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label>Вместимость</label>
+        <input type="number" id="editHallCapacity" min="1" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Описание</label>
+      <textarea id="editHallDesc"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="toggle-switch">
+        <input type="checkbox" id="editHallActive" />
+        <div class="toggle-track"></div>
+        <span>Активен</span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('editHallModal')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitEditHall()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="toast"></div>
+
+<script>
+  // ─── State ─────────────────────────────────────────────────
+  let products = {};
+  let halls = {};
+  let timers = {};
+  let refreshInterval;
+
+  // ─── Helpers ───────────────────────────────────────────────
+  function apiBase() {
+    const val = document.getElementById('apiUrl').value.trim().replace(/\/$/, '');
+    return val || window.location.origin;
+  }
+
+  async function apiFetch(path, opts = {}) {
+    const res = await fetch(apiBase() + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show ' + type;
+    setTimeout(() => { t.className = ''; }, 3500);
+  }
+
+  function fmtTime(dt)  { return new Date(dt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
+  function fmtDate(dt)  { return new Date(dt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+  function fmtDt(dt)    { return new Date(dt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  function esc(str)     { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function countdown(endTime) {
+    const diff = new Date(endTime) - Date.now();
+    if (diff <= 0) return { text: 'Время вышло', cls: 'expired' };
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    const cls = diff < 10 * 60000 ? 'warning' : 'ok';
+    const text = h > 0
+      ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+      : `${m}:${String(s).padStart(2,'0')}`;
+    return { text, cls };
+  }
+
+  // ─── Tab switching ──────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+
+    if (name === 'stock')   loadStock();
+    if (name === 'mgmt')    loadMgmtTab();
+    if (name === 'history') loadHistory();
+    if (name === 'menu')    loadMenuTab();
+    if (name === 'loyalty') loadLoyaltyTab();
+  }
+
+  // ─── Sessions tab ───────────────────────────────────────────
+  async function loadMeta() {
+    try {
+      const [prods, hls] = await Promise.all([
+        apiFetch('/api/v1/products/'),
+        apiFetch('/api/v1/halls/'),
+      ]);
+      prods.forEach(p => { products[p.id] = p; });
+      hls.forEach(h => { halls[h.id] = h; });
+    } catch(e) { console.warn('Meta load error:', e); }
+  }
+
+  async function loadOrdersForBooking(bookingId) {
+    try { return await apiFetch(`/api/v1/orders/booking/${bookingId}/pending`); }
+    catch { return []; }
+  }
+
+  async function loadStockForHall(hallId) {
+    try {
+      const items = await apiFetch(`/api/v1/stock/halls/${hallId}/inventory`);
+      const map = {};
+      items.forEach(item => { map[item.product_id] = item; });
+      return map;
+    } catch { return {}; }
+  }
+
+  function renderPendingBooking(b) {
+    const hall = halls[b.hall_id] || { name: `Зал #${b.hall_id}` };
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.id = `booking-${b.id}`;
+
+    const nowMs = Date.now();
+    const startMs = new Date(b.start_time).getTime();
+    const EARLY_MS = 30 * 60 * 1000; // 30 минут до начала
+    const tooEarly = nowMs < startMs - EARLY_MS;
+
+    let untilStartHtml = '';
+    if (startMs > nowMs) {
+      const diffMs = startMs - nowMs;
+      const diffDays = Math.floor(diffMs / 86400000);
+      const diffH   = Math.floor((diffMs % 86400000) / 3600000);
+      const diffM   = Math.floor((diffMs % 3600000) / 60000);
+      let label = '';
+      if (diffDays > 0)      label = `${diffDays} д ${diffH} ч`;
+      else if (diffH > 0)    label = `${diffH} ч ${diffM} мин`;
+      else                   label = `${diffM} мин`;
+      untilStartHtml = `<div class="card-meta" style="color:var(--yellow);font-size:13px">⏳ До начала: ${label}</div>`;
+    }
+
+    const activateDisabled = tooEarly
+      ? 'disabled style="opacity:0.45;cursor:not-allowed" title="Активация возможна за 30 мин до начала"'
+      : '';
+
+    div.innerHTML = `
+      <div class="card-header">
+        <div class="hall-name">${esc(hall.name)}</div>
+        <span class="status-badge status-pending">Ожидает</span>
+        ${b.is_open_ended ? '<span class="status-badge" style="background:rgba(108,99,255,.15);color:#818cf8">по факту</span>' : ''}
+      </div>
+      <div class="card-meta">🗓 ${fmtDate(b.start_time)}, ${b.is_open_ended ? 'с ' + fmtTime(b.start_time) : fmtTime(b.start_time) + ' – ' + fmtTime(b.end_time)}</div>
+      ${untilStartHtml}
+      <div class="card-meta">💰 ${b.total_price ? Number(b.total_price).toLocaleString('ru-RU') + ' ₸' : b.is_open_ended ? 'по факту' : '—'}</div>
+      <div class="card-meta" style="color:var(--text-muted);font-size:12px">Бронь #${b.id}</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" ${activateDisabled} onclick="activateBooking(${b.id})">▶ Активировать</button>
+        <button class="btn btn-danger"  onclick="cancelBooking(${b.id})">✕ Отменить</button>
+      </div>`;
+    return div;
+  }
+
+  async function renderActiveBooking(b) {
+    const hall = halls[b.hall_id] || { name: `Зал #${b.hall_id}` };
+    const orders = await loadOrdersForBooking(b.id);
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.id = `booking-${b.id}`;
+
+    let ordersHtml = '';
+    if (orders.length === 0) {
+      ordersHtml = `<div style="font-size:13px;color:var(--text-muted);padding:6px 0">Нет ожидающих заказов</div>`;
+    } else {
+      ordersHtml = orders.map(o => {
+        const itemsHtml = (o.items || []).map(it => {
+          const prod = products[it.product_id] || { name: `Товар #${it.product_id}`, unit: 'шт' };
+          const unit = esc(prod.unit || 'шт');
+          return `<div class="item-row">
+            <span class="item-name">${esc(prod.name)}</span>
+            <span class="item-qty">× ${it.quantity} ${unit}</span>
+            <span class="item-price">${Number(it.price_at_order).toLocaleString('ru-RU')} ₸</span>
+          </div>`;
+        }).join('');
+        const ago = Math.round((Date.now() - new Date(o.created_at)) / 60000);
+        return `<div class="order-card" id="order-${o.id}">
+          <div class="order-meta">
+            <span class="order-id">Заказ #${o.id}</span>
+            <span>${ago < 1 ? 'только что' : ago + ' мин назад'}</span>
+          </div>
+          <div class="items-list">${itemsHtml || '<span style="color:var(--text-muted);font-size:13px">Позиции не добавлены</span>'}</div>
+          <div class="order-actions">
+            <button class="btn btn-success" onclick="completeOrder(${o.id}, ${b.id})">✓ Выполнено</button>
+            <button class="btn btn-danger"  onclick="cancelOrder(${o.id}, ${b.id})">✕ Отменить</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    div.innerHTML = `
+      <div class="card-header">
+        <div class="hall-name">${esc(hall.name)}</div>
+        <span class="status-badge status-active">Активна</span>
+        ${b.is_open_ended ? '<span class="status-badge" style="background:rgba(108,99,255,.15);color:#818cf8">по факту</span>' : ''}
+      </div>
+      <div class="card-meta">📅 ${fmtDate(b.start_time)} &nbsp;⏰ ${b.is_open_ended ? 'с ' + fmtTime(b.start_time) : fmtTime(b.start_time) + ' – ' + fmtTime(b.end_time)}</div>
+      <div class="timer" id="timer-${b.id}">—</div>
+      <div class="card-meta" style="font-size:12px">
+        Бронь #${b.id} · ${b.total_price ? Number(b.total_price).toLocaleString('ru-RU') + ' ₸' : b.is_open_ended ? 'по факту' : '—'}
+        ${b.extra_charge ? `<span style="color:var(--yellow);margin-left:6px">+ ${Number(b.extra_charge).toLocaleString('ru-RU')} ₸ доплата</span>` : ''}
+      </div>
+      <div class="orders-section">
+        <div class="orders-label">Заказы <span class="badge">${orders.length}</span></div>
+        ${ordersHtml}
+      </div>
+      <div style="margin:8px 0 4px">
+        <button class="btn btn-outline" style="font-size:12px;padding:4px 12px" onclick="openExtraChargeModal(${b.id})">+ Доплата</button>
+      </div>
+      <hr class="divider">
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="completeBooking(${b.id})">✓ Завершить сеанс</button>
+        <button class="btn btn-danger"  onclick="cancelBooking(${b.id})">✕ Отменить</button>
+      </div>`;
+
+    if (timers[b.id]) clearInterval(timers[b.id]);
+    if (b.is_open_ended) {
+      // Для "по факту" показываем время с начала сеанса
+      const timerEl = document.getElementById(`timer-${b.id}`);
+      if (timerEl) {
+        const tick = () => {
+          const elapsed = Math.floor((Date.now() - new Date(b.start_time)) / 1000);
+          const h = Math.floor(elapsed / 3600);
+          const m = Math.floor((elapsed % 3600) / 60);
+          const s = elapsed % 60;
+          const pad = n => String(n).padStart(2, '0');
+          timerEl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+          timerEl.className = 'timer timer-ok';
+        };
+        tick();
+        timers[b.id] = setInterval(tick, 1000);
+      }
+    } else {
+      const tick = () => {
+        const el = document.getElementById(`timer-${b.id}`);
+        if (!el) { clearInterval(timers[b.id]); return; }
+        const nowMs = Date.now();
+        const startMs = new Date(b.start_time).getTime();
+        if (nowMs < startMs) {
+          // Сеанс ещё не начался — показываем время до старта тихо
+          const { text } = countdown(b.start_time);
+          el.textContent = '▶ ' + text;
+          el.className = 'timer';
+          el.style.cssText = 'color:var(--text-muted);font-size:15px;font-weight:500';
+        } else {
+          // Сеанс идёт — обычный обратный отсчёт до конца
+          el.style.cssText = '';
+          const { text, cls } = countdown(b.end_time);
+          el.textContent = text;
+          el.className = 'timer ' + cls;
+        }
+      };
+      tick();
+      timers[b.id] = setInterval(tick, 1000);
+    }
+
+    return div;
+  }
+
+  async function refresh() {
+    try {
+      await loadMeta();
+      const [pending, active] = await Promise.all([
+        apiFetch('/api/v1/bookings/?status=pending'),
+        apiFetch('/api/v1/bookings/?status=active'),
+      ]);
+
+      Object.values(timers).forEach(clearInterval);
+      timers = {};
+
+      const pendingEl = document.getElementById('pendingList');
+      document.getElementById('pendingCount').textContent = pending.length;
+      if (pending.length === 0) {
+        pendingEl.innerHTML = `<div class="empty"><div class="empty-icon">✅</div>Нет броней в ожидании</div>`;
+      } else {
+        pendingEl.innerHTML = '';
+        pending.forEach(b => pendingEl.appendChild(renderPendingBooking(b)));
+      }
+
+      const activeEl = document.getElementById('activeList');
+      document.getElementById('activeCount').textContent = active.length;
+      if (active.length === 0) {
+        activeEl.innerHTML = `<div class="empty"><div class="empty-icon">🎮</div>Нет активных сеансов</div>`;
+      } else {
+        activeEl.innerHTML = '';
+        for (const b of active) activeEl.appendChild(await renderActiveBooking(b));
+      }
+
+      document.getElementById('lastUpdate').textContent =
+        'Обновлено: ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch(e) {
+      showToast('Ошибка загрузки: ' + e.message, 'error');
+      document.getElementById('lastUpdate').textContent = '⚠ Ошибка соединения';
+    }
+  }
+
+  // ─── Session actions ────────────────────────────────────────
+  async function activateBooking(id) {
+    try {
+      await apiFetch(`/api/v1/bookings/${id}/activate`, { method: 'POST' });
+      showToast(`Бронь #${id} активирована`, 'success');
+      await refresh();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function completeBooking(id) {
+    if (!confirm(`Завершить сеанс для брони #${id}?`)) return;
+    try {
+      await apiFetch(`/api/v1/bookings/${id}/complete`, { method: 'POST' });
+      showToast(`Сеанс #${id} завершён`, 'success');
+      await refresh();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function cancelBooking(id) {
+    if (!confirm(`Отменить бронь #${id}?`)) return;
+    try {
+      await apiFetch(`/api/v1/bookings/${id}/cancel`, { method: 'POST' });
+      showToast(`Бронь #${id} отменена`, 'success');
+      await refresh();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  function openExtraChargeModal(bookingId) {
+    document.getElementById('extraChargeBookingId').value = bookingId;
+    document.getElementById('extraChargeAmount').value = '';
+    document.getElementById('extraChargeModal').classList.add('open');
+    setTimeout(() => document.getElementById('extraChargeAmount').focus(), 100);
+  }
+
+  async function submitExtraCharge() {
+    const bookingId = Number(document.getElementById('extraChargeBookingId').value);
+    const amount    = Number(document.getElementById('extraChargeAmount').value);
+    if (!amount || amount <= 0) { showToast('Введите сумму доплаты', 'error'); return; }
+    try {
+      await apiFetch(`/api/v1/bookings/${bookingId}/add-charge`, {
+        method: 'POST',
+        body: JSON.stringify({ amount }),
+      });
+      showToast(`Доплата ${amount.toLocaleString('ru-RU')} ₸ добавлена`, 'success');
+      closeModal('extraChargeModal');
+      await refresh();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function completeOrder(orderId) {
+    try {
+      document.querySelector(`#order-${orderId} .btn-success`).disabled = true;
+      await apiFetch(`/api/v1/orders/${orderId}/complete`, { method: 'POST' });
+      showToast(`Заказ #${orderId} выполнен — товар списан`, 'success');
+      await refresh();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); await refresh(); }
+  }
+
+  async function cancelOrder(orderId) {
+    try {
+      await apiFetch(`/api/v1/orders/${orderId}/cancel`, { method: 'POST' });
+      showToast(`Заказ #${orderId} отменён`, 'success');
+      await refresh();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ─── Stock tab ──────────────────────────────────────────────
+  let allMovements = [];
+  let activeMovFilter = 'all';
+
+  // ── qtyBlock helper ──
+  function qtyBlock(qty, unit, cls) {
+    const u = (unit || 'шт').replace(/^\d+\s*/, '');
+    return `<div class="qty-block ${cls}"><span class="qty-num">${qty}</span><span class="qty-unit">${esc(u)}</span></div>`;
+  }
+
+  async function loadStock() {
+    await loadMeta();
+    const tbody  = document.getElementById('stockTableBody');
+    const movDiv = document.getElementById('movementsList');
+    const hallList = Object.values(halls);
+
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted)">Загрузка...</td></tr>';
+    movDiv.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Загрузка...</div>';
+
+    if (hallList.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-muted)">Нет залов</td></tr>';
+      return;
+    }
+
+    try {
+      // Загружаем инвентарь и движения по всем залам параллельно
+      const [inventories, allMovsPerHall] = await Promise.all([
+        Promise.all(hallList.map(h => apiFetch(`/api/v1/stock/halls/${h.id}/inventory`).catch(() => []))),
+        Promise.all(hallList.map(h => apiFetch(`/api/v1/stock/halls/${h.id}/movements`).catch(() => []))),
+      ]);
+
+      // Агрегируем инвентарь по товарам (суммируем по всем залам)
+      const byProduct = {}; // product_id → aggregated item
+      hallList.forEach((hall, i) => {
+        inventories[i].forEach(item => {
+          if (!byProduct[item.product_id]) {
+            byProduct[item.product_id] = {
+              product_id: item.product_id,
+              product_name: item.product_name,
+              sku: item.sku,
+              unit: item.unit,
+              quantity: 0,
+              reserved_quantity: 0,
+              available: 0,
+              last_received_at: null,
+            };
+          }
+          const agg = byProduct[item.product_id];
+          agg.quantity          += item.quantity;
+          agg.reserved_quantity += item.reserved_quantity;
+          agg.available         += item.available;
+          if (item.last_received_at) {
+            if (!agg.last_received_at || item.last_received_at > agg.last_received_at)
+              agg.last_received_at = item.last_received_at;
+          }
+        });
+      });
+
+      const aggList = Object.values(byProduct);
+      if (aggList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-muted)">Нет товаров — добавьте их в Управлении</td></tr>';
+      } else {
+        tbody.innerHTML = aggList.map(item => {
+          const avail = item.available;
+          const availCls = avail === 0 ? 'qty-zero' : avail < 3 ? 'qty-low' : 'qty-ok';
+          const unit = (item.unit || 'шт').replace(/^\d+\s*/, '');
+          const receivedAt = item.last_received_at
+            ? `<div style="font-size:12px;font-weight:600">${fmtDate(item.last_received_at)}</div>
+               <div style="font-size:11px;color:var(--text-muted)">${fmtTime(item.last_received_at)}</div>`
+            : '<span style="color:var(--text-muted)">—</span>';
+          return `<tr>
+            <td>
+              <div style="font-weight:600">${esc(item.product_name)}</div>
+              ${item.sku ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${esc(item.sku)}</div>` : ''}
+            </td>
+            <td>${qtyBlock(item.quantity, unit, 'qty-neutral')}</td>
+            <td>${item.reserved_quantity > 0
+              ? `<span class="reserve-pill">🔒 ${item.reserved_quantity} ${esc(unit)}</span>`
+              : '<span style="color:var(--text-muted)">—</span>'
+            }</td>
+            <td>${qtyBlock(avail, unit, availCls)}</td>
+            <td>${receivedAt}</td>
+            <td>
+              <button class="btn btn-outline" style="font-size:12px;padding:4px 10px;white-space:nowrap"
+                onclick="openReceiveModal(${item.product_id})">
+                + Приход
+              </button>
+            </td>
+          </tr>`;
+        }).join('');
+      }
+
+      // Объединяем движения из всех залов, добавляем имя зала
+      const allMovs = allMovsPerHall.flatMap((movs, i) =>
+        movs.map(m => ({ ...m, hallName: hallList[i].name }))
+      );
+      allMovements = allMovs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      renderMovements();
+
+    } catch(e) {
+      tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:16px">Ошибка: ${esc(e.message)}</td></tr>`;
+    }
+  }
+
+  function renderMovements() {
+    const movDiv = document.getElementById('movementsList');
+    const movTypeLabel = {
+      receive:        'Приход',
+      reserve:        'Резерв',
+      write_off:      'Списание',
+      cancel_reserve: 'Снят резерв',
+    };
+    const movTypeDesc = {
+      receive:        'товар поступил на склад',
+      reserve:        'заблокировано под заказ',
+      write_off:      'списано при завершении сеанса',
+      cancel_reserve: 'резерв снят при отмене',
+    };
+
+    const filtered = activeMovFilter === 'all'
+      ? allMovements
+      : allMovements.filter(m => m.movement_type === activeMovFilter);
+
+    if (filtered.length === 0) {
+      movDiv.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Нет движений для этого фильтра</div>';
+      return;
+    }
+
+    movDiv.innerHTML = '<div class="movements-list">' + filtered.slice(0, 80).map(m => {
+      const prod  = products[m.product_id] || { name: `Товар #${m.product_id}` };
+      const sign  = m.quantity > 0 ? '+' : '';
+      const qCls  = m.quantity > 0 ? 'positive' : 'negative';
+      const desc  = movTypeDesc[m.movement_type] || '';
+      return `<div class="mov-row">
+        <span class="mov-type mov-${m.movement_type}">${movTypeLabel[m.movement_type] || m.movement_type}</span>
+        <div class="mov-product">
+          ${esc(prod.name)}
+          <small>${desc}</small>
+        </div>
+        <div class="mov-qty ${qCls}">${sign}${Math.abs(m.quantity)}</div>
+        <div class="mov-meta">${fmtDt(m.created_at)}</div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  function filterMovements(type, btn) {
+    activeMovFilter = type;
+    document.querySelectorAll('.mov-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderMovements();
+  }
+
+  // ── Receive modal ──
+  function openReceiveModal(productId) {
+    const prod = products[productId];
+    const productName = prod ? prod.name : `Товар #${productId}`;
+    document.getElementById('receiveProductId').value   = productId;
+    document.getElementById('receiveProductName').value = productName;
+    document.getElementById('receiveQty').value  = 1;
+    document.getElementById('receiveNote').value = '';
+    document.getElementById('receiveModal').classList.add('open');
+  }
+
+  async function submitReceive() {
+    const productId = parseInt(document.getElementById('receiveProductId').value);
+    const qty       = parseInt(document.getElementById('receiveQty').value);
+    const note      = document.getElementById('receiveNote').value.trim() || null;
+
+    if (!qty || qty < 1) { showToast('Укажите количество', 'error'); return; }
+
+    // Используем первый доступный зал автоматически
+    const hallList = Object.values(halls);
+    if (hallList.length === 0) { showToast('Нет залов в системе', 'error'); return; }
+    const hallId = hallList[0].id;
+
+    try {
+      await apiFetch('/api/v1/stock/receive', {
+        method: 'POST',
+        body: JSON.stringify({ hall_id: hallId, product_id: productId, quantity: qty, note }),
+      });
+      closeModal('receiveModal');
+      showToast('Приход добавлен', 'success');
+      await loadStock();
+    } catch(e) {
+      showToast('Ошибка: ' + e.message, 'error');
+    }
+  }
+
+  // ── История поставок ──
+  let allDeliveries = []; // все receive-движения
+
+  async function openDeliveryHistory() {
+    // Берём receive-движения из уже загруженных allMovements,
+    // если allMovements пуст — грузим заново
+    let receives = allMovements.filter(m => m.movement_type === 'receive');
+    if (!receives.length && Object.keys(halls).length > 0) {
+      const hallList = Object.values(halls);
+      const allMovsPerHall = await Promise.all(
+        hallList.map(h => apiFetch(`/api/v1/stock/halls/${h.id}/movements`).catch(() => []))
+      );
+      const merged = allMovsPerHall.flatMap((movs, i) =>
+        movs.map(m => ({ ...m, hallName: hallList[i].name }))
+      );
+      allMovements = merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      receives = allMovements.filter(m => m.movement_type === 'receive');
+    }
+    allDeliveries = receives;
+
+    // По умолчанию — сегодняшняя дата
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('deliveryDateFilter').value = today;
+    document.getElementById('deliverySortOrder').value = 'desc';
+    renderDeliveryHistory();
+    document.getElementById('deliveryHistoryModal').classList.add('open');
+  }
+
+  function renderDeliveryHistory() {
+    const dateVal   = document.getElementById('deliveryDateFilter').value; // 'YYYY-MM-DD' или ''
+    const sortOrder = document.getElementById('deliverySortOrder').value;
+    const list      = document.getElementById('deliveryHistoryList');
+
+    let rows = [...allDeliveries];
+
+    // Фильтр по дате
+    if (dateVal) {
+      rows = rows.filter(m => {
+        const d = new Date(m.created_at);
+        const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return iso === dateVal;
+      });
+    }
+
+    // Сортировка
+    rows.sort((a, b) => sortOrder === 'asc'
+      ? new Date(a.created_at) - new Date(b.created_at)
+      : new Date(b.created_at) - new Date(a.created_at)
+    );
+
+    if (rows.length === 0) {
+      list.innerHTML = '<div class="empty" style="padding:32px"><div class="empty-icon">📦</div>Поставок нет</div>';
+      return;
+    }
+
+    // Группируем по дате (дд.мм.гггг)
+    const byDate = {};
+    rows.forEach(m => {
+      const day = fmtDate(m.created_at);
+      if (!byDate[day]) byDate[day] = [];
+      byDate[day].push(m);
+    });
+
+    list.innerHTML = Object.entries(byDate).map(([day, items]) => {
+      const rowsHtml = items.map(m => {
+        const prod = products[m.product_id] || { name: `Товар #${m.product_id}`, unit: 'шт' };
+        const unit = (prod.unit || 'шт').replace(/^\d+\s*/, '');
+        const note = m.note ? `<span style="color:var(--text-muted);font-size:11px"> · ${esc(m.note)}</span>` : '';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;min-width:52px">${fmtTime(m.created_at)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px">${esc(prod.name)}${note}</div>
+          </div>
+          <div style="font-size:16px;font-weight:700;color:var(--green);white-space:nowrap">+${m.quantity} ${esc(unit)}</div>
+        </div>`;
+      }).join('');
+
+      return `<div style="margin-bottom:6px">
+        <div style="padding:6px 14px;background:var(--surface2);font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;border-radius:6px 6px 0 0">${day}</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;margin-bottom:8px">${rowsHtml}</div>
+      </div>`;
+    }).join('');
+  }
+  // ─── Management tab ─────────────────────────────────────────
+  async function loadMgmtTab() {
+    await loadMeta();
+
+    // Populate category dropdown in "new product" form (hierarchical)
+    const catsForForm = await apiFetch('/api/v1/categories/').catch(() => []);
+    allCategories = catsForForm;
+    const prodCatSel = document.getElementById('prodCategory');
+    const rootsForDrop = catsForForm.filter(c => !c.parent_id).sort((a, b) => a.position - b.position);
+    let catOptions = '<option value="">— Без категории —</option>';
+    for (const r of rootsForDrop) {
+      catOptions += `<option value="${r.id}">${r.emoji || ''} ${esc(r.name)}</option>`;
+      catsForForm.filter(c => c.parent_id === r.id).sort((a, b) => a.position - b.position)
+        .forEach(sub => { catOptions += `<option value="${sub.id}">&nbsp;&nbsp;↳ ${sub.emoji || ''} ${esc(sub.name)}</option>`; });
+    }
+    prodCatSel.innerHTML = catOptions;
+
+    // Halls list
+    const hallsArr = await apiFetch('/api/v1/halls/').catch(() => []);
+    document.getElementById('hallsCountBadge').textContent = hallsArr.length;
+    document.getElementById('hallsList').innerHTML = hallsArr.length === 0
+      ? '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Залов нет</div>'
+      : hallsArr.map(h => `
+          <div class="list-item">
+            <div>
+              <div class="list-item-name">${esc(h.name)}</div>
+              <div class="list-item-meta">${Number(h.price_per_hour).toLocaleString('ru-RU')} ₸/ч · ${h.capacity || '?'} мест</div>
+            </div>
+            <div class="list-item-actions">
+              <span class="badge ${h.is_active ? 'badge-green' : ''}" style="${!h.is_active ? 'opacity:.5' : ''}">${h.is_active ? 'Активен' : 'Неакт.'}</span>
+              <button class="btn btn-outline" style="padding:4px 9px;font-size:12px" onclick="openEditHall(${h.id})">✏️</button>
+              <button class="btn btn-danger"  style="padding:4px 9px;font-size:12px" onclick="deleteHall(${h.id}, '${esc(h.name)}')">🗑</button>
+            </div>
+          </div>`).join('');
+
+    // Products list (all, including inactive)
+    const prodsArr = await apiFetch('/api/v1/products/?active_only=false').catch(() => []);
+    document.getElementById('prodsCountBadge').textContent = prodsArr.length;
+    document.getElementById('prodsList').innerHTML = prodsArr.length === 0
+      ? '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Товаров нет</div>'
+      : prodsArr.map(p => `
+          <div class="list-item">
+            <div>
+              <div class="list-item-name">${esc(p.name)}</div>
+              <div class="list-item-meta">${Number(p.price).toLocaleString('ru-RU')} ₸${p.sku ? ' · ' + esc(p.sku) : ''}</div>
+            </div>
+            <div class="list-item-actions">
+              <span class="badge ${p.is_active ? 'badge-green' : ''}" style="${!p.is_active ? 'opacity:.5' : ''}">${p.is_active ? 'Активен' : 'Неакт.'}</span>
+              <button class="btn btn-outline" style="padding:4px 9px;font-size:12px" onclick="openEditProduct(${p.id})">✏️</button>
+              <button class="btn btn-danger"  style="padding:4px 9px;font-size:12px" onclick="deleteProduct(${p.id}, '${esc(p.name)}')">🗑</button>
+            </div>
+          </div>`).join('');
+  }
+
+  async function createHall() {
+    const name         = document.getElementById('hallName').value.trim();
+    const price_per_hour = Number(document.getElementById('hallPrice').value);
+    const capacity     = Number(document.getElementById('hallCapacity').value) || null;
+    const description  = document.getElementById('hallDesc').value.trim() || null;
+    const is_active    = document.getElementById('hallActive').checked;
+
+    if (!name || !price_per_hour) { showToast('Введите название и цену', 'error'); return; }
+
+    try {
+      await apiFetch('/api/v1/halls/', {
+        method: 'POST',
+        body: JSON.stringify({ name, price_per_hour, capacity, description, is_active }),
+      });
+      showToast(`Зал "${name}" создан`, 'success');
+      document.getElementById('hallName').value = '';
+      document.getElementById('hallPrice').value = '';
+      document.getElementById('hallCapacity').value = '';
+      document.getElementById('hallDesc').value = '';
+      await loadMgmtTab();
+      await loadMeta();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function toggleHall(id, active) {
+    try {
+      await apiFetch(`/api/v1/halls/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: active }),
+      });
+      showToast(`Зал ${active ? 'включён' : 'отключён'}`, 'success');
+      await loadMgmtTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ── Edit hall modal ──
+  async function openEditHall(id) {
+    try {
+      const h = await apiFetch(`/api/v1/halls/${id}`);
+      document.getElementById('editHallId').value       = h.id;
+      document.getElementById('editHallName').value     = h.name;
+      document.getElementById('editHallPrice').value    = h.price_per_hour;
+      document.getElementById('editHallCapacity').value = h.capacity || '';
+      document.getElementById('editHallDesc').value     = h.description || '';
+      document.getElementById('editHallActive').checked = h.is_active;
+      document.getElementById('editHallModal').classList.add('open');
+    } catch(e) { showToast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  async function submitEditHall() {
+    const id = Number(document.getElementById('editHallId').value);
+    const body = {
+      name:          document.getElementById('editHallName').value.trim(),
+      price_per_hour: Number(document.getElementById('editHallPrice').value),
+      capacity:      Number(document.getElementById('editHallCapacity').value) || null,
+      description:   document.getElementById('editHallDesc').value.trim() || null,
+      is_active:     document.getElementById('editHallActive').checked,
+    };
+    if (!body.name || !body.price_per_hour) { showToast('Заполните название и цену', 'error'); return; }
+    try {
+      await apiFetch(`/api/v1/halls/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      showToast('Зал сохранён', 'success');
+      closeModal('editHallModal');
+      await loadMgmtTab();
+      await loadMeta();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function deleteHall(id, name) {
+    if (!confirm(`Удалить зал "${name}"?\nЭто действие нельзя отменить.`)) return;
+    try {
+      await apiFetch(`/api/v1/halls/${id}`, { method: 'DELETE' });
+      showToast(`Зал "${name}" удалён`, 'success');
+      await loadMgmtTab();
+      await loadMeta();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function createProduct() {
+    const name       = document.getElementById('prodName').value.trim();
+    const price      = Number(document.getElementById('prodPrice').value);
+    const cost_price = Number(document.getElementById('prodCost').value) || null;
+    const unit       = document.getElementById('prodUnit').value.trim() || 'шт';
+    const sku        = document.getElementById('prodSku').value.trim() || null;
+    const category_id = Number(document.getElementById('prodCategory').value) || null;
+    const is_active  = document.getElementById('prodActive').checked;
+
+    if (!name || !price) { showToast('Введите название и цену', 'error'); return; }
+
+    try {
+      await apiFetch('/api/v1/products/', {
+        method: 'POST',
+        body: JSON.stringify({ name, price, cost_price, unit, sku, category_id, is_active }),
+      });
+      showToast(`Товар "${name}" создан`, 'success');
+      document.getElementById('prodName').value = '';
+      document.getElementById('prodPrice').value = '';
+      document.getElementById('prodCost').value = '';
+      document.getElementById('prodSku').value = '';
+      document.getElementById('prodCategory').value = '';
+      await loadMgmtTab();
+      await loadMenuTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function toggleProduct(id, active) {
+    try {
+      await apiFetch(`/api/v1/products/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: active }),
+      });
+      showToast(`Товар ${active ? 'включён' : 'отключён'}`, 'success');
+      await loadMgmtTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ── Edit product modal ──
+  async function openEditProduct(id) {
+    try {
+      const p = await apiFetch(`/api/v1/products/${id}`);
+      // Populate categories dropdown (hierarchical)
+      const cats = allCategories.length ? allCategories : await apiFetch('/api/v1/categories/').catch(() => []);
+      const catSel = document.getElementById('editProdCategory');
+      const editRoots = cats.filter(c => !c.parent_id).sort((a, b) => a.position - b.position);
+      let editCatOpts = '<option value="">— Без категории —</option>';
+      for (const r of editRoots) {
+        editCatOpts += `<option value="${r.id}" ${p.category_id === r.id ? 'selected' : ''}>${r.emoji || ''} ${esc(r.name)}</option>`;
+        cats.filter(c => c.parent_id === r.id).sort((a, b) => a.position - b.position)
+          .forEach(sub => { editCatOpts += `<option value="${sub.id}" ${p.category_id === sub.id ? 'selected' : ''}>&nbsp;&nbsp;↳ ${sub.emoji || ''} ${esc(sub.name)}</option>`; });
+      }
+      catSel.innerHTML = editCatOpts;
+
+      document.getElementById('editProductId').value    = p.id;
+      document.getElementById('editProdName').value     = p.name;
+      document.getElementById('editProdPrice').value    = p.price;
+      document.getElementById('editProdCost').value     = p.cost_price || '';
+      document.getElementById('editProdUnit').value     = p.unit || 'шт';
+      document.getElementById('editProdSku').value      = p.sku || '';
+      document.getElementById('editProdActive').checked = p.is_active;
+      document.getElementById('editProductModal').classList.add('open');
+    } catch(e) { showToast('Ошибка загрузки: ' + e.message, 'error'); }
+  }
+
+  async function submitEditProduct() {
+    const id = Number(document.getElementById('editProductId').value);
+    const cost_price_raw = document.getElementById('editProdCost').value;
+    const body = {
+      name:        document.getElementById('editProdName').value.trim(),
+      price:       Number(document.getElementById('editProdPrice').value),
+      cost_price:  cost_price_raw ? Number(cost_price_raw) : null,
+      unit:        document.getElementById('editProdUnit').value.trim() || 'шт',
+      sku:         document.getElementById('editProdSku').value.trim() || null,
+      is_active:   document.getElementById('editProdActive').checked,
+      category_id: Number(document.getElementById('editProdCategory').value) || null,
+    };
+    if (!body.name || !body.price) { showToast('Заполните название и цену', 'error'); return; }
+    try {
+      await apiFetch(`/api/v1/products/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      showToast('Товар сохранён', 'success');
+      closeModal('editProductModal');
+      await loadMgmtTab();
+      await loadMenuTab();
+      await loadMeta();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function deleteProduct(id, name) {
+    if (!confirm(`Удалить товар "${name}"?\nЭто действие нельзя отменить.`)) return;
+    try {
+      await apiFetch(`/api/v1/products/${id}`, { method: 'DELETE' });
+      showToast(`Товар "${name}" удалён`, 'success');
+      await loadMgmtTab();
+      await loadMeta();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // MENU TAB
+  // ══════════════════════════════════════════════════════════════
+
+  let allCategories = [];
+
+  async function loadMenuTab() {
+    await loadMeta();
+    const [cats, prods] = await Promise.all([
+      apiFetch('/api/v1/categories/').catch(() => []),
+      apiFetch('/api/v1/products/?active_only=false').catch(() => []),
+    ]);
+    allCategories = cats;
+
+    // Build category map and tree
+    const catMap = {};
+    cats.forEach(c => { catMap[c.id] = c; });
+    const roots = cats.filter(c => !c.parent_id).sort((a, b) => a.position - b.position);
+    const childrenOf = id => cats.filter(c => c.parent_id === id).sort((a, b) => a.position - b.position);
+
+    // Populate "catParent" dropdown in create form (only root categories as parents)
+    const catParentSel = document.getElementById('catParent');
+    catParentSel.innerHTML = '<option value="">— Корневая категория —</option>' +
+      roots.map(c => `<option value="${c.id}">${c.emoji || ''} ${esc(c.name)}</option>`).join('');
+
+    // Categories list — hierarchical
+    document.getElementById('catsCountBadge').textContent = cats.length;
+    if (cats.length === 0) {
+      document.getElementById('catsList').innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Категорий нет</div>';
+    } else {
+      let catsHtml = '';
+      for (const root of roots) {
+        catsHtml += renderCategoryItem(root, false);
+        for (const child of childrenOf(root.id)) {
+          catsHtml += renderCategoryItem(child, true);
+        }
+      }
+      // Orphaned subcategories whose parent was deleted
+      cats.filter(c => c.parent_id && !catMap[c.parent_id]).forEach(c => { catsHtml += renderCategoryItem(c, false); });
+      document.getElementById('catsList').innerHTML = catsHtml;
+    }
+
+    // Products list grouped by category (hierarchical)
+    document.getElementById('menuProdsCountBadge').textContent = prods.length;
+    const grouped = {};
+    const uncategorized = [];
+    prods.forEach(p => {
+      if (p.category_id && catMap[p.category_id]) {
+        if (!grouped[p.category_id]) grouped[p.category_id] = [];
+        grouped[p.category_id].push(p);
+      } else {
+        uncategorized.push(p);
+      }
+    });
+
+    let html = '';
+    for (const root of roots) {
+      const rootItems = grouped[root.id] || [];
+      const rootChildren = childrenOf(root.id);
+      const hasContent = rootItems.length > 0 || rootChildren.length > 0;
+      if (!hasContent) continue;
+      html += `<div style="margin:8px 0 2px;padding:6px 0 2px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border)">${root.emoji || ''} ${esc(root.name)}</div>`;
+      // Direct products of root (no subcategory)
+      if (rootItems.length > 0) {
+        html += rootItems.map(p => renderMenuProductItem(p, catMap)).join('');
+      }
+      // Subcategories
+      for (const sub of rootChildren) {
+        const subItems = grouped[sub.id] || [];
+        html += `<div style="margin:6px 0 2px 10px;font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase">
+          ${sub.emoji || ''} ${esc(sub.name)}
+        </div>`;
+        if (subItems.length === 0) {
+          html += `<div style="font-size:12px;color:var(--text-muted);padding:0 0 4px 14px">Нет блюд</div>`;
+        } else {
+          html += subItems.map(p => renderMenuProductItem(p, catMap, true)).join('');
+        }
+      }
+    }
+    // Root categories with no parent but shown standalone (subcategories treated as roots if orphaned)
+    cats.filter(c => !c.parent_id && !(grouped[c.id] || []).length && !childrenOf(c.id).length)
+      .forEach(c => {
+        // already handled above via hasContent check — skip
+      });
+    if (uncategorized.length > 0) {
+      html += `<div style="margin:8px 0 2px;padding:6px 0 2px;font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border)">Без категории</div>`;
+      html += uncategorized.map(p => renderMenuProductItem(p, catMap)).join('');
+    }
+    document.getElementById('menuProdsList').innerHTML = html || '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Товаров нет</div>';
+  }
+
+  function renderCategoryItem(c, isChild) {
+    const indent = isChild ? 'padding-left:16px;border-left:2px solid var(--border);margin-left:8px' : '';
+    return `<div class="list-item" style="${indent}">
+      <div>
+        <div class="list-item-name">${c.emoji ? c.emoji + ' ' : ''}${esc(c.name)}${isChild ? ' <span style="font-size:10px;color:var(--text-muted);font-weight:400">подкатегория</span>' : ''}</div>
+        <div class="list-item-meta">Порядок: ${c.position}</div>
+      </div>
+      <div class="list-item-actions">
+        <span class="badge ${c.is_active ? 'badge-green' : ''}" style="${!c.is_active ? 'opacity:.5' : ''}">${c.is_active ? 'Активна' : 'Неакт.'}</span>
+        <button class="btn btn-outline" style="padding:4px 9px;font-size:12px" onclick="openEditCategory(${c.id})">✏️</button>
+        <button class="btn btn-danger"  style="padding:4px 9px;font-size:12px" onclick="deleteCategory(${c.id}, '${esc(c.name)}')">🗑</button>
+      </div>
+    </div>`;
+  }
+
+  function renderMenuProductItem(p, catMap, indented = false) {
+    const margin = p.cost_price
+      ? Math.round((1 - Number(p.cost_price) / Number(p.price)) * 100)
+      : null;
+    const marginHtml = margin !== null
+      ? `<span style="font-size:11px;color:${margin >= 30 ? 'var(--green)' : 'var(--yellow)'}">маржа ${margin}%</span>`
+      : '';
+    const indent = indented ? 'padding-left:14px' : '';
+    return `<div class="list-item" style="${indent}">
+      <div>
+        <div class="list-item-name">${esc(p.name)}</div>
+        <div class="list-item-meta">
+          Продажа: ${Number(p.price).toLocaleString('ru-RU')} ₸
+          ${p.cost_price ? `· Себест.: ${Number(p.cost_price).toLocaleString('ru-RU')} ₸ ` : ''}
+          ${marginHtml}
+          ${p.unit ? '· ' + esc(p.unit) : ''}
+        </div>
+      </div>
+      <div class="list-item-actions">
+        <span class="badge ${p.is_active ? 'badge-green' : ''}" style="${!p.is_active ? 'opacity:.5' : ''}">${p.is_active ? 'Активен' : 'Неакт.'}</span>
+        <button class="btn btn-outline" style="padding:4px 9px;font-size:12px" onclick="openEditProduct(${p.id})">✏️</button>
+      </div>
+    </div>`;
+  }
+
+  async function createCategory() {
+    const name      = document.getElementById('catName').value.trim();
+    const emoji     = document.getElementById('catEmoji').value.trim() || null;
+    const position  = Number(document.getElementById('catPosition').value) || 0;
+    const is_active = document.getElementById('catActive').checked;
+    const parent_id = Number(document.getElementById('catParent').value) || null;
+    if (!name) { showToast('Введите название', 'error'); return; }
+    try {
+      await apiFetch('/api/v1/categories/', { method: 'POST', body: JSON.stringify({ name, emoji, position, is_active, parent_id }) });
+      showToast(`Категория "${name}" создана`, 'success');
+      document.getElementById('catName').value = '';
+      document.getElementById('catEmoji').value = '';
+      document.getElementById('catParent').value = '';
+      await loadMenuTab();
+      await loadMgmtTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function openEditCategory(id) {
+    const c = allCategories.find(x => x.id === id) || await apiFetch(`/api/v1/categories/${id}`);
+    // Populate parent dropdown — exclude self and own children
+    const roots = allCategories.filter(x => !x.parent_id && x.id !== id);
+    const editParentSel = document.getElementById('editCatParent');
+    editParentSel.innerHTML = '<option value="">— Корневая категория —</option>' +
+      roots.map(r => `<option value="${r.id}" ${c.parent_id === r.id ? 'selected' : ''}>${r.emoji || ''} ${esc(r.name)}</option>`).join('');
+    document.getElementById('editCatId').value       = c.id;
+    document.getElementById('editCatEmoji').value    = c.emoji || '';
+    document.getElementById('editCatName').value     = c.name;
+    document.getElementById('editCatPosition').value = c.position;
+    document.getElementById('editCatActive').checked = c.is_active;
+    document.getElementById('editCategoryModal').classList.add('open');
+  }
+
+  async function submitEditCategory() {
+    const id = Number(document.getElementById('editCatId').value);
+    const body = {
+      name:      document.getElementById('editCatName').value.trim(),
+      emoji:     document.getElementById('editCatEmoji').value.trim() || null,
+      position:  Number(document.getElementById('editCatPosition').value) || 0,
+      is_active: document.getElementById('editCatActive').checked,
+      parent_id: Number(document.getElementById('editCatParent').value) || null,
+    };
+    if (!body.name) { showToast('Введите название', 'error'); return; }
+    try {
+      await apiFetch(`/api/v1/categories/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      showToast('Категория сохранена', 'success');
+      closeModal('editCategoryModal');
+      await loadMenuTab();
+      await loadMgmtTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function deleteCategory(id, name) {
+    if (!confirm(`Удалить категорию "${name}"?\nПодкатегории и товары потеряют привязку.`)) return;
+    try {
+      await apiFetch(`/api/v1/categories/${id}`, { method: 'DELETE' });
+      showToast(`Категория "${name}" удалена`, 'success');
+      await loadMenuTab();
+      await loadMgmtTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function openQuickAddProduct(catId) {
+    document.getElementById('quickProdCatId').value = catId;
+    document.getElementById('quickProdInfo').textContent = '';
+
+    // Show category name in label
+    const cat = allCategories.find(c => c.id === catId);
+    document.getElementById('quickProdCatLabel').textContent =
+      'Категория: ' + (cat ? (cat.emoji ? cat.emoji + ' ' : '') + cat.name : '—');
+
+    // Load all products and fill select
+    const sel = document.getElementById('quickProdSelect');
+    sel.innerHTML = '<option value="">— Загрузка... —</option>';
+    try {
+      const prods = await apiFetch('/api/v1/products/?active_only=false');
+      // Sort: without category first, then others
+      prods.sort((a, b) => {
+        const aHasCat = a.category_id ? 1 : 0;
+        const bHasCat = b.category_id ? 1 : 0;
+        if (aHasCat !== bHasCat) return aHasCat - bHasCat;
+        return a.name.localeCompare(b.name, 'ru');
+      });
+      sel.innerHTML = '<option value="">— Выберите товар —</option>' +
+        prods.map(p => {
+          const curCat = p.category_id
+            ? (allCategories.find(c => c.id === p.category_id)?.name || `кат. #${p.category_id}`)
+            : 'без категории';
+          return `<option value="${p.id}" data-name="${esc(p.name)}" data-price="${p.price}" data-unit="${esc(p.unit||'шт')}" data-cat="${esc(curCat)}">
+            ${esc(p.name)} — ${Number(p.price).toLocaleString('ru-RU')} ₸ (${esc(curCat)})
+          </option>`;
+        }).join('');
+    } catch(e) {
+      sel.innerHTML = '<option value="">Ошибка загрузки</option>';
+    }
+
+    // Show info on select change
+    sel.onchange = () => {
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt.value) { document.getElementById('quickProdInfo').textContent = ''; return; }
+      document.getElementById('quickProdInfo').textContent =
+        `${opt.dataset.name} · ${Number(opt.dataset.price).toLocaleString('ru-RU')} ₸ · ${opt.dataset.unit} · сейчас: ${opt.dataset.cat}`;
+    };
+
+    document.getElementById('quickAddProductModal').classList.add('open');
+  }
+
+  async function submitQuickAddProduct() {
+    const category_id = Number(document.getElementById('quickProdCatId').value) || null;
+    const prodId      = Number(document.getElementById('quickProdSelect').value);
+    if (!prodId) { showToast('Выберите товар', 'error'); return; }
+    const prodName = document.getElementById('quickProdSelect').options[
+      document.getElementById('quickProdSelect').selectedIndex
+    ].dataset.name;
+    try {
+      await apiFetch(`/api/v1/products/${prodId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ category_id }),
+      });
+      showToast(`"${prodName}" добавлен в категорию`, 'success');
+      closeModal('quickAddProductModal');
+      await loadMenuTab();
+      await loadMgmtTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // LOYALTY TAB
+  // ══════════════════════════════════════════════════════════════
+
+  function onLoyTypeChange() {
+    const t = document.getElementById('loyType').value;
+    document.getElementById('loyValueGroup').style.display = t === 'discount' ? '' : 'none';
+  }
+  function onEditLoyTypeChange() {
+    const t = document.getElementById('editLoyType').value;
+    document.getElementById('editLoyValueGroup').style.display = t === 'discount' ? '' : 'none';
+  }
+
+  async function loadLoyaltyTab() {
+    const rules = await apiFetch('/api/v1/loyalty/rules').catch(() => []);
+    document.getElementById('loyRulesCountBadge').textContent = rules.length;
+    document.getElementById('loyRulesList').innerHTML = rules.length === 0
+      ? '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Правил нет — добавьте первое</div>'
+      : rules.map(r => {
+          const rewardLabel = r.reward_type === 'free_booking'
+            ? '🎉 Бесплатная аренда'
+            : `🎁 Скидка ${Number(r.reward_value)}%`;
+          return `<div class="list-item">
+            <div>
+              <div class="list-item-name">Каждый ${r.visits_required}-й визит → ${rewardLabel}</div>
+              ${r.description ? `<div class="list-item-meta">${esc(r.description)}</div>` : ''}
+            </div>
+            <div class="list-item-actions">
+              <span class="badge ${r.is_active ? 'badge-green' : ''}" style="${!r.is_active ? 'opacity:.5' : ''}">${r.is_active ? 'Активно' : 'Неакт.'}</span>
+              <button class="btn btn-outline" style="padding:4px 9px;font-size:12px" onclick="openEditLoyalty(${r.id})">✏️</button>
+              <button class="btn btn-danger"  style="padding:4px 9px;font-size:12px" onclick="deleteLoyaltyRule(${r.id}, ${r.visits_required})">🗑</button>
+            </div>
+          </div>`;
+        }).join('');
+  }
+
+  async function createLoyaltyRule() {
+    const visits_required = Number(document.getElementById('loyVisits').value);
+    const reward_type     = document.getElementById('loyType').value;
+    const reward_value    = reward_type === 'discount' ? Number(document.getElementById('loyValue').value) : 0;
+    const description     = document.getElementById('loyDesc').value.trim() || null;
+    if (!visits_required) { showToast('Укажите количество визитов', 'error'); return; }
+    if (reward_type === 'discount' && !reward_value) { showToast('Укажите размер скидки', 'error'); return; }
+    try {
+      await apiFetch('/api/v1/loyalty/rules', {
+        method: 'POST',
+        body: JSON.stringify({ visits_required, reward_type, reward_value, description, is_active: true }),
+      });
+      showToast('Правило создано', 'success');
+      ['loyVisits','loyValue','loyDesc'].forEach(id => document.getElementById(id).value = '');
+      await loadLoyaltyTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function openEditLoyalty(id) {
+    const r = await apiFetch(`/api/v1/loyalty/rules`).then(rules => rules.find(x => x.id === id));
+    if (!r) return;
+    document.getElementById('editLoyId').value      = r.id;
+    document.getElementById('editLoyVisits').value  = r.visits_required;
+    document.getElementById('editLoyType').value    = r.reward_type;
+    document.getElementById('editLoyValue').value   = r.reward_value;
+    document.getElementById('editLoyDesc').value    = r.description || '';
+    document.getElementById('editLoyActive').checked = r.is_active;
+    onEditLoyTypeChange();
+    document.getElementById('editLoyaltyModal').classList.add('open');
+  }
+
+  async function submitEditLoyalty() {
+    const id = Number(document.getElementById('editLoyId').value);
+    const reward_type = document.getElementById('editLoyType').value;
+    const body = {
+      visits_required: Number(document.getElementById('editLoyVisits').value),
+      reward_type,
+      reward_value: reward_type === 'discount' ? Number(document.getElementById('editLoyValue').value) : 0,
+      description:  document.getElementById('editLoyDesc').value.trim() || null,
+      is_active:    document.getElementById('editLoyActive').checked,
+    };
+    try {
+      await apiFetch(`/api/v1/loyalty/rules/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      showToast('Правило сохранено', 'success');
+      closeModal('editLoyaltyModal');
+      await loadLoyaltyTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  async function deleteLoyaltyRule(id, visits) {
+    if (!confirm(`Удалить правило (каждый ${visits}-й визит)?`)) return;
+    try {
+      await apiFetch(`/api/v1/loyalty/rules/${id}`, { method: 'DELETE' });
+      showToast('Правило удалено', 'success');
+      await loadLoyaltyTab();
+    } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
+  }
+
+  // ── Generic modal close ──
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  // ─── History tab ────────────────────────────────────────────
+  async function loadHistory() {
+    const el = document.getElementById('historyList');
+    el.innerHTML = '<div class="history-empty">Загрузка...</div>';
+    try {
+      const sessions = await apiFetch('/api/v1/bookings/history');
+      document.getElementById('historyCount').textContent = sessions.length;
+
+      if (sessions.length === 0) {
+        el.innerHTML = '<div class="history-empty">📋 Завершённых сеансов пока нет</div>';
+        return;
+      }
+
+      el.innerHTML = sessions.map(s => renderHistorySession(s)).join('');
+    } catch(e) {
+      el.innerHTML = `<div class="history-empty" style="color:var(--red)">Ошибка: ${esc(e.message)}</div>`;
+    }
+  }
+
+  function renderHistorySession(s) {
+    const dateStr = s.completed_at
+      ? fmtDt(s.completed_at)
+      : fmtDt(s.end_time);
+
+    const durationStr = s.duration_minutes >= 60
+      ? `${Math.floor(s.duration_minutes / 60)} ч ${s.duration_minutes % 60} мин`
+      : `${s.duration_minutes} мин`;
+
+    const hallCost  = Number(s.hall_cost).toLocaleString('ru-RU');
+    const foodTotal = Number(s.food_total).toLocaleString('ru-RU');
+    const grandTotal = Number(s.grand_total).toLocaleString('ru-RU');
+
+    const ordersHtml = s.orders.length === 0
+      ? '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Заказов не было</div>'
+      : s.orders.map(o => {
+          const orderTotal = Number(o.order_total).toLocaleString('ru-RU');
+          const itemsHtml = o.items.map(item => {
+            const sub = Number(item.subtotal).toLocaleString('ru-RU');
+            return `<div class="history-order-item">
+              <span class="history-order-item-name">${esc(item.product_name)}</span>
+              <span class="history-order-item-qty">${item.quantity} шт × ${Number(item.price_at_order).toLocaleString('ru-RU')} ₸</span>
+              <span class="history-order-item-price">${sub} ₸</span>
+            </div>`;
+          }).join('');
+          const statusLabel = { completed: '✅ Выполнен', cancelled: '❌ Отменён', pending: '⏳ Незакрыт' }[o.status] || o.status;
+          return `<div class="history-order-card">
+            <div class="history-order-head">
+              <span>Заказ #${o.id} · ${statusLabel}</span>
+              <span style="font-weight:600;color:var(--accent)">${orderTotal} ₸</span>
+            </div>
+            <div class="history-order-items">${itemsHtml}</div>
+          </div>`;
+        }).join('');
+
+    return `<div class="history-session" id="hs-${s.booking_id}">
+      <div class="history-session-header" onclick="toggleHistorySession(${s.booking_id})">
+        <div class="history-session-left">
+          <div class="history-session-hall">🏠 ${esc(s.hall_name)}</div>
+          <div class="history-session-meta">
+            📅 ${fmtDt(s.start_time)} — ${fmtTime(s.completed_at || s.end_time)}
+            &nbsp;·&nbsp; Бронь #${s.booking_id}
+          </div>
+        </div>
+        <div class="history-session-right">
+          <span class="history-duration">⏱ ${durationStr}</span>
+          <span class="history-total">${grandTotal} ₸</span>
+          <span class="history-chevron">▼</span>
+        </div>
+      </div>
+      <div class="history-session-body">
+        <div class="history-cost-row">
+          <div class="history-cost-block">
+            <span class="history-cost-label">Аренда зала</span>
+            <span class="history-cost-value">${hallCost} ₸</span>
+          </div>
+          <div class="history-cost-block">
+            <span class="history-cost-label">Товары / заказы</span>
+            <span class="history-cost-value">${foodTotal} ₸</span>
+          </div>
+          <div class="history-cost-block">
+            <span class="history-cost-label">Итого</span>
+            <span class="history-cost-value" style="color:var(--accent)">${grandTotal} ₸</span>
+          </div>
+        </div>
+        <div class="history-orders-title">Заказы сеанса</div>
+        ${ordersHtml}
+      </div>
+    </div>`;
+  }
+
+  function toggleHistorySession(id) {
+    document.getElementById('hs-' + id).classList.toggle('open');
+  }
+
+  // ─── Init ──────────────────────────────────────────────────
+  refresh();
+  refreshInterval = setInterval(refresh, 30_000);
+</script>
+</body>
+</html>
