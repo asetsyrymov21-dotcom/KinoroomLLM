@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kinoroom — Первичная настройка</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --border: #2e3150;
+      --accent: #6c63ff;
+      --accent-hover: #7c74ff;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .logo span { color: var(--accent); }
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    input {
+      display: block;
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 18px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input:focus { border-color: var(--accent); }
+    button {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    button:hover { background: var(--accent-hover); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .error {
+      background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.3);
+      color: var(--red);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .success {
+      background: rgba(34,197,94,.1);
+      border: 1px solid rgba(34,197,94,.3);
+      color: #22c55e;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo"><span>Kinoroom</span></div>
+    <div class="subtitle">Первичная настройка — создание первого администратора</div>
+
+    <div class="error" id="errorMsg"></div>
+    <div class="success" id="successMsg"></div>
+
+    <form id="setupForm" onsubmit="doSetup(event)">
+      <label>Логин администратора</label>
+      <input type="text" id="username" placeholder="admin" autocomplete="username" required minlength="3" />
+
+      <label>Пароль</label>
+      <input type="password" id="password" placeholder="Минимум 6 символов" autocomplete="new-password" required minlength="6" />
+
+      <label>Повторите пароль</label>
+      <input type="password" id="password2" placeholder="Повторите пароль" autocomplete="new-password" required minlength="6" />
+
+      <button type="submit" id="submitBtn">Создать администратора</button>
+    </form>
+  </div>
+
+  <script>
+    function apiBase() {
+      return window.location.origin;
+    }
+
+    async function doSetup(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const password2 = document.getElementById('password2').value;
+      const btn = document.getElementById('submitBtn');
+      const errEl = document.getElementById('errorMsg');
+      const okEl = document.getElementById('successMsg');
+
+      errEl.style.display = 'none';
+      okEl.style.display = 'none';
+
+      if (password !== password2) {
+        errEl.textContent = 'Пароли не совпадают';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Создание...';
+
+      try {
+        const res = await fetch(apiBase() + '/api/v1/staff/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+
+        // Сохраняем токен и переходим в операторку
+        localStorage.setItem('kinorum_token', data.token);
+        localStorage.setItem('kinorum_role', data.role);
+        localStorage.setItem('kinorum_username', data.username);
+
+        okEl.textContent = `Администратор «${data.username}» создан! Переход в операторку...`;
+        okEl.style.display = 'block';
+        document.getElementById('setupForm').style.display = 'none';
+
+        setTimeout(() => { window.location.href = '/operator.html'; }, 1500);
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Создать администратора';
+      }
+    }
+  </script>
+</body>
+</html>

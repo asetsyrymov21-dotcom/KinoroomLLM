@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.v1 import halls, products, bookings, stock, orders, users, categories, loyalty
+from app.api.v1 import halls, products, bookings, stock, orders, users, categories, loyalty, staff
 
 app = FastAPI(
     title="Kinorum API",
@@ -35,6 +35,7 @@ app.include_router(bookings.router, prefix="/api/v1")
 app.include_router(stock.router, prefix="/api/v1")
 app.include_router(orders.router, prefix="/api/v1")
 app.include_router(loyalty.router, prefix="/api/v1")
+app.include_router(staff.router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["Health"])
@@ -48,6 +49,13 @@ if os.path.isfile(_operator_file):
     @app.get("/operator.html", include_in_schema=False)
     async def operator_panel():
         return FileResponse(_operator_file)
+
+# Serve setup page
+_setup_file = os.path.join(os.path.dirname(__file__), "..", "setup.html")
+if os.path.isfile(_setup_file):
+    @app.get("/setup.html", include_in_schema=False)
+    async def setup_panel():
+        return FileResponse(_setup_file)
 
 # Serve Mini App frontend (must be last to not shadow API routes)
 _frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
