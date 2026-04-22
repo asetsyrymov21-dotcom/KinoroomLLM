@@ -137,13 +137,14 @@
 ## Локальный запуск и доступ извне
 
 - Приложение запускается на порту **8001**
-- Публичный доступ настроен через **ngrok** (туннель на localhost:8001)
-- Операторка доступна по: `https://<ngrok-url>/operator.html`
-- Мини-апп (Telegram Web App): `https://<ngrok-url>/app` — **уже привязан к ngrok URL в настройках Telegram бота**
-- API: `https://<ngrok-url>/api/v1/`
-- Ngrok статичный домен: **mercedes-ironic-rikki.ngrok-free.dev** (не меняется)
+- Публичный доступ: **Cloudflare Tunnel** (активный) + ngrok (запасной)
+- Текущий URL Cloudflare: меняется при каждом перезапуске туннеля (`*.trycloudflare.com`)
+- Операторка: `https://<текущий-url>/operator.html`
+- Первичная настройка: `https://<текущий-url>/setup.html`
+- Мини-апп (Telegram Web App): `https://<текущий-url>/app`
+- API: `https://<текущий-url>/api/v1/`
+- Ngrok статичный домен (запасной): **mercedes-ironic-rikki.ngrok-free.app**
 - Аккаунт ngrok: olzhik882009@gmail.com (Plan: Free)
-- Регион: Europe (eu)
 
 ---
 
