@@ -1144,18 +1144,23 @@
       startSel.value = state.selectedStart || freeStart;
       state.selectedStart = startSel.value;
 
-      // Функция обновления end-селекта: только слоты ПОСЛЕ выбранного старта
+      // Функция обновления end-селекта: только слоты минимум через 2 часа после старта
       const refreshEndOptions = () => {
         const currentEnd = endSel.value || state.selectedEnd;
+        // Вычисляем минимальное время конца: старт + 2 часа
+        const [sh, sm] = state.selectedStart.split(':').map(Number);
+        const minEndMin = sh * 60 + sm + 120;
+        const minEndStr = `${String(Math.floor(minEndMin / 60)).padStart(2, '0')}:${String(minEndMin % 60).padStart(2, '0')}`;
+
         endSel.innerHTML = hours
-          .filter(t => t > state.selectedStart)
+          .filter(t => t >= minEndStr)
           .map(t => makeOption(t, true))
           .join('');
         // Восстанавливаем предыдущий выбор если он ещё валиден, иначе берём первый свободный
-        if (currentEnd && endSel.querySelector(`option[value="${currentEnd}"]:not([disabled])`)) {
+        if (currentEnd && currentEnd >= minEndStr && endSel.querySelector(`option[value="${currentEnd}"]:not([disabled])`)) {
           endSel.value = currentEnd;
         } else {
-          const freeEnd = hours.find(t => t > state.selectedStart && !isSlotOccupied(t) && !isPast(t));
+          const freeEnd = hours.find(t => t >= minEndStr && !isSlotOccupied(t) && !isPast(t));
           endSel.value = freeEnd || '';
         }
         state.selectedEnd = endSel.value;
@@ -1190,6 +1195,14 @@
           overlapWarn.style.display = 'none';
           btn.disabled = true;
           btn.textContent = 'Неверный интервал';
+          return;
+        }
+
+        if (diffH < 2) {
+          preview.style.display = 'none';
+          overlapWarn.style.display = 'none';
+          btn.disabled = true;
+          btn.textContent = 'Минимум 2 часа';
           return;
         }
 
