@@ -723,9 +723,121 @@
     .bar-value { font-size: 12px; color: var(--text-muted); width: 70px; text-align: right; flex-shrink: 0; }
     .retention-bar { background: var(--surface2); border-radius: 8px; overflow: hidden; height: 10px; margin-bottom: 8px; }
     .retention-fill { height: 100%; background: var(--accent); border-radius: 8px; transition: width .4s; }
+
+    /* ── Login overlay ── */
+    #loginOverlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #loginOverlay.hidden { display: none; }
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      width: 100%; max-width: 380px;
+    }
+    .login-logo { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .login-logo span { color: var(--accent); }
+    .login-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+    .login-label {
+      display: block; font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--text-muted); margin-bottom: 6px;
+    }
+    .login-input {
+      display: block; width: 100%;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 14px;
+      border-radius: 8px; font-size: 14px; margin-bottom: 16px;
+      outline: none; transition: border-color .15s;
+    }
+    .login-input:focus { border-color: var(--accent); }
+    .login-btn {
+      width: 100%; background: var(--accent); color: #fff; border: none;
+      padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background .15s;
+    }
+    .login-btn:hover { background: var(--accent-hover); }
+    .login-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .login-error {
+      background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
+      color: var(--red); padding: 10px 14px; border-radius: 8px;
+      font-size: 13px; margin-bottom: 14px; display: none;
+    }
+    .login-setup-link {
+      text-align: center; margin-top: 16px; font-size: 12px; color: var(--text-muted);
+    }
+    .login-setup-link a { color: var(--accent); text-decoration: none; }
+    .login-setup-link a:hover { text-decoration: underline; }
+
+    /* ── Header auth info ── */
+    .header-user {
+      font-size: 13px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .header-user strong { color: var(--text); }
+    .btn-logout {
+      background: none; border: 1px solid var(--border);
+      color: var(--text-muted); padding: 5px 12px;
+      border-radius: 8px; font-size: 12px; cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── Staff tab ── */
+    .staff-wrap { padding: 20px 24px; max-width: 900px; margin: 0 auto; }
+    .staff-form {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+    }
+    .staff-form-title {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .7px; color: var(--text-muted); margin-bottom: 14px;
+    }
+    .staff-form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .staff-form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
+    .staff-form-group label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+    .staff-form-group input, .staff-form-group select {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 13px; outline: none;
+    }
+    .staff-form-group input:focus, .staff-form-group select:focus { border-color: var(--accent); }
+    .staff-table { width: 100%; border-collapse: collapse; }
+    .staff-table th {
+      text-align: left; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .6px;
+      color: var(--text-muted); border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+    }
+    .staff-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+    .staff-table tr:last-child td { border-bottom: none; }
+    .role-badge {
+      display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .role-admin { background: rgba(108,99,255,.15); color: var(--accent); border: 1px solid rgba(108,99,255,.3); }
+    .role-operator { background: rgba(148,163,184,.1); color: var(--text-muted); border: 1px solid var(--border); }
   </style>
 </head>
 <body>
+
+<!-- ══════════════════════ LOGIN OVERLAY ══════════════════════ -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo"><span>Kinoroom</span></div>
+    <div class="login-subtitle">Панель оператора — войдите чтобы продолжить</div>
+    <div class="login-error" id="loginError"></div>
+    <form onsubmit="doLogin(event)">
+      <label class="login-label">Логин</label>
+      <input class="login-input" type="text" id="loginUsername" placeholder="username" autocomplete="username" required />
+      <label class="login-label">Пароль</label>
+      <input class="login-input" type="password" id="loginPassword" placeholder="••••••" autocomplete="current-password" required />
+      <button class="login-btn" type="submit" id="loginBtn">Войти</button>
+    </form>
+    <div class="login-setup-link">Первый запуск? <a href="/setup.html">Создать администратора</a></div>
+  </div>
+</div>
 
 <header>
   <div class="status-dot"></div>
@@ -733,6 +845,10 @@
   <div class="header-right">
     <span class="last-update" id="lastUpdate">Загрузка...</span>
     <button class="btn-refresh" onclick="refresh()">⟳ Обновить</button>
+    <div class="header-user" id="headerUser" style="display:none">
+      <strong id="headerUsername"></strong>
+      <button class="btn-logout" onclick="doLogout()">Выйти</button>
+    </div>
   </div>
 </header>
 
@@ -750,6 +866,7 @@
   <button class="tab-btn" onclick="switchTab('history')">📋 История</button>
   <button class="tab-btn" onclick="switchTab('mgmt')">⚙ Управление</button>
   <button class="tab-btn" onclick="switchTab('analytics')">📊 Аналитика</button>
+  <button class="tab-btn admin-only" id="tabBtnStaff" onclick="switchTab('staff')" style="display:none">👥 Сотрудники</button>
 </div>
 
 <!-- ══════════════════════ TAB: SESSIONS ══════════════════════ -->
@@ -1052,6 +1169,45 @@
   </div>
 </div>
 
+<!-- ══════════════════════ TAB: STAFF ══════════════════════ -->
+<div class="tab-content" id="tab-staff">
+  <div class="staff-wrap">
+    <!-- Форма добавления -->
+    <div class="staff-form">
+      <div class="staff-form-title">Добавить сотрудника</div>
+      <div class="staff-form-row">
+        <div class="staff-form-group">
+          <label>Логин</label>
+          <input type="text" id="newStaffUsername" placeholder="username" minlength="3" maxlength="64" />
+        </div>
+        <div class="staff-form-group">
+          <label>Пароль</label>
+          <input type="password" id="newStaffPassword" placeholder="Минимум 6 символов" minlength="6" />
+        </div>
+        <div class="staff-form-group" style="max-width:160px">
+          <label>Роль</label>
+          <select id="newStaffRole">
+            <option value="operator">Оператор</option>
+            <option value="admin">Администратор</option>
+          </select>
+        </div>
+        <div class="staff-form-group" style="max-width:140px;justify-content:flex-end">
+          <button class="btn btn-primary" onclick="createStaff()" style="height:36px">+ Добавить</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Список -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="section-title" style="padding:16px 20px;margin-bottom:0;border-bottom:1px solid var(--border)">
+        Сотрудники
+        <span class="badge" id="staffCount">—</span>
+      </div>
+      <div id="staffList"><div class="loading" style="padding:30px">Загрузка...</div></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════════ TAB: MANAGEMENT ══════════════════════ -->
 <div class="tab-content" id="tab-mgmt">
   <div class="grid-1">
@@ -1337,6 +1493,74 @@
   let halls = {};
   let timers = {};
   let refreshInterval;
+  let currentRole = null;
+  let currentUsername = null;
+
+  // ─── Auth helpers ───────────────────────────────────────────
+  function getToken() { return localStorage.getItem('kinorum_token'); }
+
+  function showLoginOverlay() {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    document.getElementById('headerUser').style.display = 'none';
+  }
+
+  function hideLoginOverlay() {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('headerUser').style.display = 'flex';
+    document.getElementById('headerUsername').textContent = currentUsername || '';
+    // Показать/скрыть вкладку сотрудников
+    const staffTab = document.getElementById('tabBtnStaff');
+    if (staffTab) staffTab.style.display = currentRole === 'admin' ? '' : 'none';
+  }
+
+  async function doLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    btn.disabled = true; btn.textContent = 'Вход...';
+    try {
+      const data = await apiFetch('/api/v1/staff/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
+      localStorage.setItem('kinorum_token', data.token);
+      localStorage.setItem('kinorum_role', data.role);
+      localStorage.setItem('kinorum_username', data.username);
+      currentRole = data.role;
+      currentUsername = data.username;
+      hideLoginOverlay();
+      refresh();
+    } catch(err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Войти';
+    }
+  }
+
+  function doLogout() {
+    localStorage.removeItem('kinorum_token');
+    localStorage.removeItem('kinorum_role');
+    localStorage.removeItem('kinorum_username');
+    currentRole = null; currentUsername = null;
+    clearInterval(refreshInterval);
+    showLoginOverlay();
+  }
+
+  function init() {
+    const token = getToken();
+    if (token) {
+      currentRole = localStorage.getItem('kinorum_role');
+      currentUsername = localStorage.getItem('kinorum_username');
+      hideLoginOverlay();
+      refresh();
+    } else {
+      showLoginOverlay();
+    }
+  }
 
   // ─── Helpers ───────────────────────────────────────────────
   function apiBase() {
@@ -1345,10 +1569,15 @@
   }
 
   async function apiFetch(path, opts = {}) {
-    const res = await fetch(apiBase() + path, {
-      headers: { 'Content-Type': 'application/json' },
-      ...opts,
-    });
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const { headers: _drop, ...restOpts } = opts;
+    const res = await fetch(apiBase() + path, { headers, ...restOpts });
+    if (res.status === 401) {
+      doLogout();
+      throw new Error('Сессия истекла, войдите снова');
+    }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || `HTTP ${res.status}`);
@@ -1395,6 +1624,7 @@
     if (name === 'menu')      loadMenuTab();
     if (name === 'loyalty')   loadLoyaltyTab();
     if (name === 'analytics') loadAnalytics();
+    if (name === 'staff')     loadStaffTab();
   }
 
   // ─── Sessions tab ───────────────────────────────────────────
@@ -1504,7 +1734,7 @@
       ${preorderBadge}
       <div class="btn-row">
         <button class="btn btn-primary" ${activateDisabled} onclick="activateBooking(${b.id})">▶ Активировать</button>
-        <button class="btn btn-danger"  onclick="cancelBooking(${b.id})">✕ Отменить</button>
+        ${currentRole === 'admin' ? `<button class="btn btn-danger" onclick="cancelBooking(${b.id})">✕ Отменить</button>` : ''}
       </div>`;
     return div;
   }
@@ -1573,7 +1803,7 @@
       <hr class="divider">
       <div class="btn-row">
         <button class="btn btn-success" onclick="completeBooking(${b.id})">✓ Завершить сеанс</button>
-        <button class="btn btn-danger"  onclick="cancelBooking(${b.id})">✕ Отменить</button>
+        ${currentRole === 'admin' ? `<button class="btn btn-danger" onclick="cancelBooking(${b.id})">✕ Отменить</button>` : ''}
       </div>`;
 
     if (timers[b.id]) clearInterval(timers[b.id]);
@@ -3030,9 +3260,92 @@
       </div>`;
   }
 
+  // ─── Staff tab ─────────────────────────────────────────────
+  async function loadStaffTab() {
+    const el = document.getElementById('staffList');
+    el.innerHTML = '<div class="loading" style="padding:30px">Загрузка...</div>';
+    try {
+      const list = await apiFetch('/api/v1/staff/');
+      document.getElementById('staffCount').textContent = list.length;
+      if (list.length === 0) {
+        el.innerHTML = '<div style="padding:30px;color:var(--text-muted);font-size:13px">Нет сотрудников</div>';
+        return;
+      }
+      el.innerHTML = `<table class="staff-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Логин</th>
+            <th>Роль</th>
+            <th style="text-align:right">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(s => `
+            <tr id="staff-row-${s.id}">
+              <td style="color:var(--text-muted)">#${s.id}</td>
+              <td><strong>${esc(s.username)}</strong></td>
+              <td><span class="role-badge ${s.role === 'admin' ? 'role-admin' : 'role-operator'}">${s.role === 'admin' ? 'Администратор' : 'Оператор'}</span></td>
+              <td style="text-align:right">
+                <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
+                  <select id="role-select-${s.id}" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px">
+                    <option value="operator" ${s.role==='operator'?'selected':''}>Оператор</option>
+                    <option value="admin" ${s.role==='admin'?'selected':''}>Администратор</option>
+                  </select>
+                  <input type="password" id="pwd-${s.id}" placeholder="Новый пароль" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;width:130px" />
+                  <button class="btn btn-outline" style="font-size:12px;padding:4px 10px" onclick="updateStaff(${s.id})">Сохранить</button>
+                  <button class="btn btn-danger" style="font-size:12px;padding:4px 10px" onclick="deleteStaff(${s.id},'${esc(s.username)}')">Удалить</button>
+                </div>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+    } catch(e) {
+      el.innerHTML = `<div style="padding:20px;color:var(--red)">${esc(e.message)}</div>`;
+    }
+  }
+
+  async function createStaff() {
+    const username = document.getElementById('newStaffUsername').value.trim();
+    const password = document.getElementById('newStaffPassword').value;
+    const role = document.getElementById('newStaffRole').value;
+    if (!username || !password) { showToast('Заполните логин и пароль', 'error'); return; }
+    try {
+      await apiFetch('/api/v1/staff/', {
+        method: 'POST',
+        body: JSON.stringify({ username, password, role }),
+      });
+      document.getElementById('newStaffUsername').value = '';
+      document.getElementById('newStaffPassword').value = '';
+      showToast(`Сотрудник «${username}» добавлен`);
+      loadStaffTab();
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  async function updateStaff(id) {
+    const role = document.getElementById(`role-select-${id}`).value;
+    const password = document.getElementById(`pwd-${id}`).value;
+    const body = { role };
+    if (password) body.password = password;
+    try {
+      await apiFetch(`/api/v1/staff/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      showToast('Сохранено');
+      loadStaffTab();
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  async function deleteStaff(id, username) {
+    if (!confirm(`Удалить сотрудника «${username}»?`)) return;
+    try {
+      await apiFetch(`/api/v1/staff/${id}`, { method: 'DELETE' });
+      showToast(`«${username}» удалён`);
+      loadStaffTab();
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
   // ─── Init ──────────────────────────────────────────────────
-  refresh();
-  refreshInterval = setInterval(refresh, 30_000);
+  init();
+  refreshInterval = setInterval(() => { if (getToken()) refresh(); }, 30_000);
 </script>
 </body>
 </html>
