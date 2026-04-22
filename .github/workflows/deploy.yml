@@ -23,4 +23,5 @@ jobs:
             docker compose up -d --build --no-recreate db
             docker compose run --rm migrate
             docker compose up -d --build api nginx
+            docker compose restart nginx
             echo "✅ Deploy complete: $(date)"
