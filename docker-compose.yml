@@ -2,10 +2,10 @@ services:
   db:
     image: postgres:15-alpine
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"   # Только localhost — закрыто от интернета
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # Пароль из .env, не хардкод!
       POSTGRES_DB: kinorum
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -46,6 +46,7 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ./frontend:/usr/share/nginx/html
       - ./operator.html:/usr/share/nginx/html/operator.html
+      - ./setup.html:/usr/share/nginx/html/setup.html
     depends_on:
       - api
 
