@@ -30,8 +30,6 @@ services:
     build: .
     env_file: .env
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    ports:
-      - "8001:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -39,6 +37,17 @@ services:
         condition: service_completed_successfully
     volumes:
       - .:/code
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8001:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend:/usr/share/nginx/html
+      - ./operator.html:/usr/share/nginx/html/operator.html
+    depends_on:
+      - api
 
 volumes:
   pgdata:

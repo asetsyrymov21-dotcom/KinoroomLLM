@@ -20,3 +20,12 @@ class UserRepository(BaseRepository[User]):
         if user is None:
             user = await self.create(telegram_id=telegram_id, name=name, phone=phone)
         return user
+
+    async def update_phone(self, user_id: int, phone: str) -> User | None:
+        user = await self.get(user_id)
+        if user is None:
+            return None
+        user.phone = phone
+        await self.session.flush()
+        await self.session.refresh(user)
+        return user
