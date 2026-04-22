@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
 from app.repositories.user import UserRepository
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import UserCreate, UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -41,8 +41,21 @@ async def get_user(
     session: AsyncSession = Depends(get_session),
 ):
     repo = UserRepository(session)
-    from fastapi import HTTPException, status
     user = await repo.get(user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
+
+
+@router.patch("/{user_id}/phone", response_model=UserRead)
+async def update_phone(
+    user_id: int,
+    data: UserUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    """Обновить номер телефона пользователя."""
+    repo = UserRepository(session)
+    user = await repo.update_phone(user_id, data.phone)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user

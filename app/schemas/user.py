@@ -9,6 +9,10 @@ class UserCreate(BaseModel):
     phone: str | None = Field(None, max_length=20)
 
 
+class UserUpdate(BaseModel):
+    phone: str = Field(..., min_length=7, max_length=20)
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
