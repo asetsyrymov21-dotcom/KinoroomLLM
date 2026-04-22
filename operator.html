@@ -1848,8 +1848,11 @@
 
     // Halls list
     const hallsArr = await apiFetch('/api/v1/halls/').catch(() => []);
-    document.getElementById('hallsCountBadge').textContent = hallsArr.length;
-    document.getElementById('hallsList').innerHTML = hallsArr.length === 0
+    const hallsBadge = document.getElementById('hallsCountBadge');
+    if (hallsBadge) hallsBadge.textContent = hallsArr.length;
+    const hallsListEl = document.getElementById('hallsList');
+    if (!hallsListEl) return;
+    hallsListEl.innerHTML = hallsArr.length === 0
       ? '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Залов нет</div>'
       : hallsArr.map(h => `
           <div class="list-item">
@@ -1866,8 +1869,11 @@
 
     // Products list (all, including inactive)
     const prodsArr = await apiFetch('/api/v1/products/?active_only=false').catch(() => []);
-    document.getElementById('prodsCountBadge').textContent = prodsArr.length;
-    document.getElementById('prodsList').innerHTML = prodsArr.length === 0
+    const prodsBadge = document.getElementById('prodsCountBadge');
+    if (prodsBadge) prodsBadge.textContent = prodsArr.length;
+    const prodsListEl = document.getElementById('prodsList');
+    if (!prodsListEl) return;
+    prodsListEl.innerHTML = prodsArr.length === 0
       ? '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Товаров нет</div>'
       : prodsArr.map(p => `
           <div class="list-item">
@@ -2204,7 +2210,6 @@
       document.getElementById('catEmoji').value = '';
       document.getElementById('catParent').value = '';
       await loadMenuTab();
-      await loadMgmtTab();
     } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
   }
 
@@ -2238,7 +2243,6 @@
       showToast('Категория сохранена', 'success');
       closeModal('editCategoryModal');
       await loadMenuTab();
-      await loadMgmtTab();
     } catch(e) { showToast('Ошибка: ' + e.message, 'error'); }
   }
 
