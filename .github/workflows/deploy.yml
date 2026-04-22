@@ -20,5 +20,7 @@ jobs:
           script: |
             cd /opt/kinoroom
             git pull origin main
-            docker compose restart nginx api
+            docker compose up -d --build --no-recreate db
+            docker compose run --rm migrate
+            docker compose up -d --build api nginx
             echo "✅ Deploy complete: $(date)"
