@@ -654,13 +654,40 @@
     .period-btn:hover { color: var(--text); border-color: var(--accent); }
     .period-btn.active { background: rgba(108,99,255,.15); border-color: var(--accent); color: var(--accent); }
     .period-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
-    .period-date-input {
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text); padding: 5px 10px; border-radius: 8px;
-      font-size: 13px; cursor: pointer; outline: none;
-      color-scheme: dark;
+    .range-picker-wrap { position: relative; }
+    .range-picker-btn.active { background: rgba(108,99,255,.15); border-color: var(--accent); color: var(--accent); }
+    .rp-popup {
+      position: absolute; top: calc(100% + 8px); left: 0; z-index: 999;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; width: 280px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
     }
-    .period-date-input:focus { border-color: var(--accent); }
+    .rp-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .rp-nav button { background: none; border: none; color: var(--text); cursor: pointer; font-size: 18px; padding: 2px 8px; border-radius: 6px; }
+    .rp-nav button:hover { background: var(--surface2); }
+    .rp-month-label { font-size: 14px; font-weight: 700; color: var(--text); }
+    .rp-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+    .rp-weekdays span { text-align: center; font-size: 11px; color: var(--text-muted); font-weight: 600; padding: 2px 0; }
+    .rp-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .rp-day {
+      text-align: center; padding: 6px 0; font-size: 13px; cursor: pointer;
+      border-radius: 6px; color: var(--text); transition: background .1s;
+    }
+    .rp-day:hover:not(.rp-empty) { background: var(--surface2); }
+    .rp-day.rp-empty { cursor: default; }
+    .rp-day.rp-today { color: var(--accent); font-weight: 700; }
+    .rp-day.rp-start, .rp-day.rp-end { background: var(--accent); color: #fff; border-radius: 6px; }
+    .rp-day.rp-in-range { background: rgba(108,99,255,.2); border-radius: 0; }
+    .rp-day.rp-start.rp-in-range { border-radius: 6px 0 0 6px; }
+    .rp-day.rp-end.rp-in-range { border-radius: 0 6px 6px 0; }
+    .rp-day.rp-start.rp-end { border-radius: 6px; }
+    .rp-day.rp-other-month { color: var(--text-muted); opacity: .4; }
+    .rp-footer { display: flex; gap: 8px; margin-top: 12px; }
+    .rp-footer button { flex: 1; padding: 7px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+    .rp-apply { background: var(--accent); color: #fff; }
+    .rp-apply:hover { background: var(--accent-hover); }
+    .rp-clear { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border) !important; }
+    .rp-clear:hover { color: var(--text); }
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -1000,9 +1027,24 @@
       <button class="period-btn active" onclick="setPeriod(30,this)">30 дней</button>
       <button class="period-btn" onclick="setPeriod(0,this)">Всё время</button>
       <div class="period-divider"></div>
-      <input type="date" id="dateFrom" class="period-date-input" oninput="setCustomPeriod()">
-      <span style="font-size:12px;color:var(--text-muted)">—</span>
-      <input type="date" id="dateTo" class="period-date-input" oninput="setCustomPeriod()">
+      <div class="range-picker-wrap" id="rangePickerWrap">
+        <button class="period-btn range-picker-btn" id="rangePickerBtn" onclick="rpToggle(event)">📅 Выбрать период</button>
+        <div class="rp-popup" id="rpPopup" style="display:none" onclick="event.stopPropagation()">
+          <div class="rp-nav">
+            <button onclick="rpShiftMonth(-1)">‹</button>
+            <span class="rp-month-label" id="rpMonthLabel"></span>
+            <button onclick="rpShiftMonth(1)">›</button>
+          </div>
+          <div class="rp-weekdays">
+            <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+          </div>
+          <div class="rp-days" id="rpDays"></div>
+          <div class="rp-footer">
+            <button class="rp-clear" onclick="rpClear()">Сбросить</button>
+            <button class="rp-apply" onclick="rpApply()">Применить</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div id="analytics-content">
       <div style="text-align:center;padding:60px;color:var(--text-muted)">Загрузка...</div>
@@ -1410,11 +1452,13 @@
       : '';
 
     const orders = await loadOrdersForBooking(b.id);
-    let ordersHtml = '';
+
+    // Детали предзаказа (скрыты по умолчанию)
+    let ordersDetailHtml = '';
     if (orders.length === 0) {
-      ordersHtml = `<div style="font-size:13px;color:var(--text-muted);padding:6px 0">Нет предзаказов</div>`;
+      ordersDetailHtml = `<div style="font-size:13px;color:var(--text-muted);padding:6px 0">Нет предзаказов</div>`;
     } else {
-      ordersHtml = orders.map(o => {
+      ordersDetailHtml = orders.map(o => {
         const itemsHtml = (o.items || []).map(it => {
           const prod = products[it.product_id] || { name: `Товар #${it.product_id}`, unit: 'шт' };
           const unit = esc(prod.unit || 'шт');
@@ -1424,13 +1468,27 @@
           </div>`;
         }).join('');
         return `<div class="order-card" id="order-${o.id}">
-          <div class="order-header">
-            <span class="order-id">Предзаказ #${o.id}</span>
-          </div>
+          <div class="order-header"><span class="order-id">Предзаказ #${o.id}</span></div>
           ${itemsHtml}
         </div>`;
       }).join('');
     }
+
+    const totalItems = orders.reduce((sum, o) => sum + (o.items || []).reduce((s, it) => s + it.quantity, 0), 0);
+    const preorderBadge = orders.length > 0
+      ? `<div class="orders-section">
+           <div class="orders-label" style="cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+             📦 Предзаказ <span class="badge">${orders.length}</span>
+             <span style="font-size:11px;color:var(--text-muted);margin-left:6px">${totalItems} поз. · нажмите чтобы раскрыть</span>
+           </div>
+           <div style="display:none">${ordersDetailHtml}</div>
+         </div>`
+      : '';
+
+    const phoneHtml = b.user?.phone
+      ? `<div class="card-meta" style="font-size:13px">📞 <a href="tel:${esc(b.user.phone)}" style="color:var(--accent);text-decoration:none">${esc(b.user.phone)}</a></div>`
+      : '';
+    const clientName = b.user?.name ? `<span style="color:var(--text-muted);font-size:12px"> · ${esc(b.user.name)}</span>` : '';
 
     div.innerHTML = `
       <div class="card-header">
@@ -1441,11 +1499,9 @@
       <div class="card-meta">🗓 ${fmtDate(b.start_time)}, ${b.is_open_ended ? 'с ' + fmtTime(b.start_time) : fmtTime(b.start_time) + ' – ' + fmtTime(b.end_time)}</div>
       ${untilStartHtml}
       <div class="card-meta">💰 ${b.total_price ? Number(b.total_price).toLocaleString('ru-RU') + ' ₸' : b.is_open_ended ? 'по факту' : '—'}</div>
-      <div class="card-meta" style="color:var(--text-muted);font-size:12px">Бронь #${b.id}</div>
-      <div class="orders-section">
-        <div class="orders-label">Предзаказ <span class="badge">${orders.length}</span></div>
-        ${ordersHtml}
-      </div>
+      <div class="card-meta" style="color:var(--text-muted);font-size:12px">Бронь #${b.id}${clientName}</div>
+      ${phoneHtml}
+      ${preorderBadge}
       <div class="btn-row">
         <button class="btn btn-primary" ${activateDisabled} onclick="activateBooking(${b.id})">▶ Активировать</button>
         <button class="btn btn-danger"  onclick="cancelBooking(${b.id})">✕ Отменить</button>
@@ -1489,6 +1545,11 @@
       }).join('');
     }
 
+    const activePhoneHtml = b.user?.phone
+      ? `<div class="card-meta" style="font-size:13px">📞 <a href="tel:${esc(b.user.phone)}" style="color:var(--accent);text-decoration:none">${esc(b.user.phone)}</a></div>`
+      : '';
+    const activeClientName = b.user?.name ? ` · ${esc(b.user.name)}` : '';
+
     div.innerHTML = `
       <div class="card-header">
         <div class="hall-name">${esc(hall.name)}</div>
@@ -1498,9 +1559,10 @@
       <div class="card-meta">📅 ${fmtDate(b.start_time)} &nbsp;⏰ ${b.is_open_ended ? 'с ' + fmtTime(b.start_time) : fmtTime(b.start_time) + ' – ' + fmtTime(b.end_time)}</div>
       <div class="timer" id="timer-${b.id}">—</div>
       <div class="card-meta" style="font-size:12px">
-        Бронь #${b.id} · ${b.total_price ? Number(b.total_price).toLocaleString('ru-RU') + ' ₸' : b.is_open_ended ? 'по факту' : '—'}
+        Бронь #${b.id}${activeClientName} · ${b.total_price ? Number(b.total_price).toLocaleString('ru-RU') + ' ₸' : b.is_open_ended ? 'по факту' : '—'}
         ${b.extra_charge ? `<span style="color:var(--yellow);margin-left:6px">+ ${Number(b.extra_charge).toLocaleString('ru-RU')} ₸ доплата</span>` : ''}
       </div>
+      ${activePhoneHtml}
       <div class="orders-section">
         <div class="orders-label">Заказы <span class="badge">${orders.length}</span></div>
         ${ordersHtml}
@@ -2625,23 +2687,113 @@
   let _analyticsCustomTo   = null;
 
   function setPeriod(days, btn) {
-    _analyticsDays    = days;
+    _analyticsDays       = days;
     _analyticsCustomFrom = null;
     _analyticsCustomTo   = null;
-    document.getElementById('dateFrom').value = '';
-    document.getElementById('dateTo').value   = '';
+    rpPickStart = null; rpPickEnd = null;
+    document.getElementById('rangePickerBtn').textContent = '📅 Выбрать период';
+    document.getElementById('rangePickerBtn').classList.remove('active');
     document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     renderAnalytics();
   }
 
-  function setCustomPeriod() {
-    const from = document.getElementById('dateFrom').value;
-    const to   = document.getElementById('dateTo').value;
-    if (!from && !to) return;
-    _analyticsCustomFrom = from || null;
-    _analyticsCustomTo   = to   || null;
+  // ── Range Picker ──
+  let rpYear  = new Date().getFullYear();
+  let rpMonth = new Date().getMonth();
+  let rpPickStart = null;  // 'YYYY-MM-DD'
+  let rpPickEnd   = null;
+  let rpSelecting = false; // true = ждём второй клик
+
+  function rpToggle(e) {
+    e.stopPropagation();
+    const popup = document.getElementById('rpPopup');
+    if (popup.style.display === 'none') {
+      rpRender();
+      popup.style.display = 'block';
+    } else {
+      popup.style.display = 'none';
+    }
+  }
+
+  document.addEventListener('click', () => {
+    const p = document.getElementById('rpPopup');
+    if (p) p.style.display = 'none';
+  });
+
+  function rpShiftMonth(d) {
+    rpMonth += d;
+    if (rpMonth > 11) { rpMonth = 0; rpYear++; }
+    if (rpMonth < 0)  { rpMonth = 11; rpYear--; }
+    rpRender();
+  }
+
+  function rpRender() {
+    const months = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                    'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    document.getElementById('rpMonthLabel').textContent = `${months[rpMonth]} ${rpYear}`;
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const firstDay = new Date(rpYear, rpMonth, 1);
+    let startOffset = firstDay.getDay() - 1; // Пн=0
+    if (startOffset < 0) startOffset = 6;
+    const daysInMonth = new Date(rpYear, rpMonth + 1, 0).getDate();
+
+    let html = '';
+    for (let i = 0; i < startOffset; i++) html += '<div class="rp-day rp-empty"></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = `${rpYear}-${String(rpMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      let cls = 'rp-day';
+      const dt = new Date(rpYear, rpMonth, d);
+      if (dt.getTime() === today.getTime()) cls += ' rp-today';
+      if (rpPickStart && ds === rpPickStart) cls += ' rp-start';
+      if (rpPickEnd   && ds === rpPickEnd)   cls += ' rp-end';
+      if (rpPickStart && rpPickEnd && ds > rpPickStart && ds < rpPickEnd) cls += ' rp-in-range';
+      if ((rpPickStart && ds === rpPickStart) && (rpPickEnd && ds !== rpPickEnd)) cls += ' rp-in-range';
+      if ((rpPickEnd   && ds === rpPickEnd)   && (rpPickStart && ds !== rpPickStart)) cls += ' rp-in-range';
+      html += `<div class="${cls}" onclick="rpClickDay(event,'${ds}')">${d}</div>`;
+    }
+    document.getElementById('rpDays').innerHTML = html;
+  }
+
+  function rpClickDay(e, ds) {
+    e.stopPropagation();
+    if (!rpSelecting || !rpPickStart) {
+      rpPickStart = ds; rpPickEnd = null; rpSelecting = true;
+    } else {
+      if (ds < rpPickStart) { rpPickEnd = rpPickStart; rpPickStart = ds; }
+      else                  { rpPickEnd = ds; }
+      rpSelecting = false;
+    }
+    rpRender();
+  }
+
+  function rpApply() {
+    if (!rpPickStart) return;
+    _analyticsCustomFrom = rpPickStart;
+    _analyticsCustomTo   = rpPickEnd || rpPickStart;
     document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('rangePickerBtn');
+    btn.classList.add('active');
+    const fmt = d => d.split('-').reverse().join('.');
+    btn.textContent = rpPickEnd && rpPickEnd !== rpPickStart
+      ? `📅 ${fmt(rpPickStart)} — ${fmt(rpPickEnd)}`
+      : `📅 ${fmt(rpPickStart)}`;
+    document.getElementById('rpPopup').style.display = 'none';
+    rpSelecting = false;
+    renderAnalytics();
+  }
+
+  function rpClear() {
+    rpPickStart = null; rpPickEnd = null; rpSelecting = false;
+    _analyticsCustomFrom = null; _analyticsCustomTo = null;
+    document.getElementById('rangePickerBtn').textContent = '📅 Выбрать период';
+    document.getElementById('rangePickerBtn').classList.remove('active');
+    document.getElementById('rpPopup').style.display = 'none';
+    // вернуть активную кнопку на 30 дней
+    const btns = document.querySelectorAll('.period-btn:not(.range-picker-btn)');
+    btns.forEach(b => { if (b.textContent.includes('30')) b.classList.add('active'); });
+    _analyticsDays = 30;
     renderAnalytics();
   }
 

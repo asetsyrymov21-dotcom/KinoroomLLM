@@ -75,13 +75,16 @@ class BookingRepository(BaseRepository[Booking]):
 
     async def get_all(self) -> list[Booking]:
         result = await self.session.execute(
-            select(Booking).order_by(Booking.created_at.desc())
+            select(Booking)
+            .options(selectinload(Booking.user))
+            .order_by(Booking.created_at.desc())
         )
         return list(result.scalars().all())
 
     async def get_by_status(self, status: BookingStatus) -> list[Booking]:
         result = await self.session.execute(
             select(Booking)
+            .options(selectinload(Booking.user))
             .where(Booking.status == status)
             .order_by(Booking.start_time.asc())
         )

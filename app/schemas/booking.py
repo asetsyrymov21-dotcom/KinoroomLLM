@@ -20,6 +20,12 @@ class BookingCreate(BaseModel):
         return self
 
 
+class BookingUserInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    name: str
+    phone: str | None = None
+
+
 class BookingRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,6 +41,7 @@ class BookingRead(BaseModel):
     created_at: datetime
     completed_at: datetime | None = None
     is_open_ended: bool = False
+    user: BookingUserInfo | None = None
 
 
 class BookingStatusUpdate(BaseModel):
