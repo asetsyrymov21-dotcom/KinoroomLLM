@@ -168,23 +168,31 @@ async def delete_staff(
 @router.post("/setup", response_model=LoginResponse, status_code=201)
 async def setup_first_admin(data: SetupRequest, session: AsyncSession = Depends(get_session)):
     """
-    Создаёт первый тенант и первого admin.
-    Доступен только если в БД нет ни одного тенанта.
+    Создаёт первый тенант (или обновляет дефолтный, созданный миграцией) и первого admin.
+    Блокируется если уже есть хотя бы один admin.
     """
-    existing_tenant = await session.execute(select(Tenant))
-    if existing_tenant.scalars().first() is not None:
+    # Блокируем если admin уже существует
+    existing_admin = await session.execute(
+        select(Staff).where(Staff.role == StaffRole.admin)
+    )
+    if existing_admin.scalars().first() is not None:
         raise HTTPException(status_code=400, detail="Первичная настройка уже выполнена")
 
-    # Проверить уникальность slug
-    slug_check = await session.execute(select(Tenant).where(Tenant.slug == data.tenant_slug))
-    if slug_check.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Tenant slug уже занят")
+    # Используем дефолтный тенант (созданный миграцией) или создаём новый
+    existing_tenant = await session.execute(select(Tenant).limit(1))
+    tenant = existing_tenant.scalar_one_or_none()
 
-    # Создать тенант
-    tenant = Tenant(name=data.tenant_name, slug=data.tenant_slug)
-    session.add(tenant)
-    await session.flush()
-    await session.refresh(tenant)
+    if tenant is None:
+        # Полностью чистая БД без миграционного тенанта
+        tenant = Tenant(name=data.tenant_name, slug=data.tenant_slug)
+        session.add(tenant)
+        await session.flush()
+        await session.refresh(tenant)
+    else:
+        # Обновляем дефолтный тенант реальными данными
+        tenant.name = data.tenant_name
+        tenant.slug = data.tenant_slug
+        await session.flush()
 
     # Создать первого admin
     staff = Staff(
