@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text
+from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -8,10 +8,14 @@ from app.database import Base
 
 class Product(Base):
     __tablename__ = "products"
+    __table_args__ = (UniqueConstraint("tenant_id", "sku", name="uq_products_tenant_sku"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    sku: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True)
+    sku: Mapped[str | None] = mapped_column(String(100), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, default=0)
     cost_price: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
@@ -30,4 +34,4 @@ class Product(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Product id={self.id} name={self.name!r} sku={self.sku!r}>"
+        return f"<Product id={self.id} tenant={self.tenant_id} name={self.name!r} sku={self.sku!r}>"

@@ -21,6 +21,9 @@ class StockLocation(Base):
     __table_args__ = (UniqueConstraint("hall_id", "product_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     hall_id: Mapped[int] = mapped_column(ForeignKey("halls.id"), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
 
@@ -31,7 +34,7 @@ class StockLocation(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<StockLocation hall={self.hall_id} product={self.product_id}>"
+        return f"<StockLocation tenant={self.tenant_id} hall={self.hall_id} product={self.product_id}>"
 
 
 class StockBalance(Base):
@@ -40,6 +43,9 @@ class StockBalance(Base):
     __tablename__ = "stock_balances"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     stock_location_id: Mapped[int] = mapped_column(
         ForeignKey("stock_locations.id"), nullable=False, unique=True
     )
@@ -54,7 +60,7 @@ class StockBalance(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<StockBalance loc={self.stock_location_id} "
+            f"<StockBalance tenant={self.tenant_id} loc={self.stock_location_id} "
             f"qty={self.quantity} reserved={self.reserved_quantity}>"
         )
 
@@ -65,6 +71,9 @@ class StockMovement(Base):
     __tablename__ = "stock_movements"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
     hall_id: Mapped[int] = mapped_column(ForeignKey("halls.id", ondelete="CASCADE"), nullable=False)
     # положительное — приход, отрицательное — расход
@@ -80,6 +89,6 @@ class StockMovement(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<StockMovement {self.movement_type} "
+            f"<StockMovement tenant={self.tenant_id} {self.movement_type} "
             f"product={self.product_id} qty={self.quantity:+d}>"
         )

@@ -108,12 +108,19 @@
 <body>
   <div class="card">
     <div class="logo"><span>Kinoroom</span></div>
-    <div class="subtitle">Первичная настройка — создание первого администратора</div>
+    <div class="subtitle">Первичная настройка — организация и первый администратор</div>
 
     <div class="error" id="errorMsg"></div>
     <div class="success" id="successMsg"></div>
 
     <form id="setupForm" onsubmit="doSetup(event)">
+      <label>Название организации</label>
+      <input type="text" id="tenantName" placeholder="Мой Кинозал" required minlength="1" />
+
+      <label>Slug (латиница, уникальный ID)</label>
+      <input type="text" id="tenantSlug" placeholder="my-cinema" required minlength="1"
+             pattern="[a-z0-9\-]+" title="Только строчные буквы, цифры и дефис" />
+
       <label>Логин администратора</label>
       <input type="text" id="username" placeholder="admin" autocomplete="username" required minlength="3" />
 
@@ -123,7 +130,7 @@
       <label>Повторите пароль</label>
       <input type="password" id="password2" placeholder="Повторите пароль" autocomplete="new-password" required minlength="6" />
 
-      <button type="submit" id="submitBtn">Создать администратора</button>
+      <button type="submit" id="submitBtn">Создать организацию и администратора</button>
     </form>
   </div>
 
@@ -134,6 +141,8 @@
 
     async function doSetup(e) {
       e.preventDefault();
+      const tenant_name = document.getElementById('tenantName').value.trim();
+      const tenant_slug = document.getElementById('tenantSlug').value.trim();
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
       const password2 = document.getElementById('password2').value;
@@ -157,7 +166,7 @@
         const res = await fetch(apiBase() + '/api/v1/staff/setup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ tenant_name, tenant_slug, username, password }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -168,8 +177,9 @@
         localStorage.setItem('kinorum_token', data.token);
         localStorage.setItem('kinorum_role', data.role);
         localStorage.setItem('kinorum_username', data.username);
+        localStorage.setItem('kinorum_tenant_id', data.tenant_id);
 
-        okEl.textContent = `Администратор «${data.username}» создан! Переход в операторку...`;
+        okEl.textContent = `Организация «${tenant_name}» и администратор «${data.username}» созданы! Переход...`;
         okEl.style.display = 'block';
         document.getElementById('setupForm').style.display = 'none';
 
@@ -178,7 +188,7 @@
         errEl.textContent = err.message;
         errEl.style.display = 'block';
         btn.disabled = false;
-        btn.textContent = 'Создать администратора';
+        btn.textContent = 'Создать организацию и администратора';
       }
     }
   </script>

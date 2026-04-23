@@ -2,7 +2,7 @@
 Сервис системы лояльности.
 
 Логика:
-  - Считаем завершённые визиты пользователя.
+  - Считаем завершённые визиты пользователя в рамках тенанта.
   - Если текущий визит (по счёту) совпадает с visits_required активного правила —
     применяем награду при создании брони.
   - Пример: правило visits_required=5, reward_type=discount, reward_value=20
@@ -57,8 +57,8 @@ class LoyaltyService:
 
     # ── Статус пользователя ────────────────────────────────────────
 
-    async def get_user_status(self, user_id: int) -> UserLoyaltyStatus:
-        completed = await self.repo.count_completed_visits(user_id)
+    async def get_user_status(self, user_id: int, tenant_id: int) -> UserLoyaltyStatus:
+        completed = await self.repo.count_completed_visits(user_id, tenant_id)
         # Следующий визит = completed + 1
         next_visit = completed + 1
         rules = await self.repo.list_active()
@@ -77,14 +77,15 @@ class LoyaltyService:
     # ── Применение к брони ─────────────────────────────────────────
 
     async def apply_to_booking(
-        self, user_id: int, base_price: Decimal
+        self, user_id: int, base_price: Decimal, tenant_id: int
     ) -> tuple[Decimal, Decimal | None, LoyaltyRule | None]:
         """
         Возвращает (итоговая_цена, discount_pct, применённое_правило).
         Если правило free_booking — цена = 0, discount_pct = 100.
         Если правило discount — цена уменьшается на reward_value %.
+        Визиты считаются только внутри тенанта.
         """
-        completed = await self.repo.count_completed_visits(user_id)
+        completed = await self.repo.count_completed_visits(user_id, tenant_id)
         next_visit = completed + 1
         rules = await self.repo.list_active()
         rule = self._find_rule_for_visit(rules, next_visit)

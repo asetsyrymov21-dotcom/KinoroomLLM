@@ -6,24 +6,39 @@ from sqlalchemy.orm import selectinload
 
 from app.models.booking import Booking, BookingStatus
 from app.models.order import Order, OrderItem
-from app.repositories.base import BaseRepository
+from app.repositories.base import TenantScopedRepository
 
 
-class BookingRepository(BaseRepository[Booking]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(Booking, session)
+class BookingRepository(TenantScopedRepository[Booking]):
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        super().__init__(Booking, session, tenant_id)
+
+    async def get_with_user(self, id: int) -> Booking | None:
+        result = await self.session.execute(
+            select(Booking)
+            .options(selectinload(Booking.user))
+            .where(
+                Booking.id == id,
+                Booking.tenant_id == self.tenant_id,
+            )
+        )
+        return result.scalar_one_or_none()
 
     async def get_with_orders(self, id: int) -> Booking | None:
         result = await self.session.execute(
             select(Booking)
             .options(selectinload(Booking.orders))
-            .where(Booking.id == id)
+            .where(
+                Booking.id == id,
+                Booking.tenant_id == self.tenant_id,
+            )
         )
         return result.scalar_one_or_none()
 
     async def get_active_for_hall(self, hall_id: int) -> list[Booking]:
         result = await self.session.execute(
             select(Booking).where(
+                Booking.tenant_id == self.tenant_id,
                 Booking.hall_id == hall_id,
                 Booking.status.in_([BookingStatus.pending, BookingStatus.active]),
             )
@@ -39,6 +54,7 @@ class BookingRepository(BaseRepository[Booking]):
     ) -> bool:
         """Проверяет, есть ли пересечение по времени для данного зала."""
         q = select(Booking).where(
+            Booking.tenant_id == self.tenant_id,
             Booking.hall_id == hall_id,
             Booking.status.in_([BookingStatus.pending, BookingStatus.active]),
             or_(
@@ -57,6 +73,7 @@ class BookingRepository(BaseRepository[Booking]):
         day_end = d.replace(hour=23, minute=59, second=59, microsecond=999999)
         result = await self.session.execute(
             select(Booking).where(
+                Booking.tenant_id == self.tenant_id,
                 Booking.hall_id == hall_id,
                 Booking.status.in_([BookingStatus.pending, BookingStatus.active]),
                 Booking.start_time < day_end,
@@ -68,7 +85,10 @@ class BookingRepository(BaseRepository[Booking]):
     async def get_by_user(self, user_id: int) -> list[Booking]:
         result = await self.session.execute(
             select(Booking)
-            .where(Booking.user_id == user_id)
+            .where(
+                Booking.tenant_id == self.tenant_id,
+                Booking.user_id == user_id,
+            )
             .order_by(Booking.created_at.desc())
         )
         return list(result.scalars().all())
@@ -77,6 +97,7 @@ class BookingRepository(BaseRepository[Booking]):
         result = await self.session.execute(
             select(Booking)
             .options(selectinload(Booking.user))
+            .where(Booking.tenant_id == self.tenant_id)
             .order_by(Booking.created_at.desc())
         )
         return list(result.scalars().all())
@@ -85,7 +106,10 @@ class BookingRepository(BaseRepository[Booking]):
         result = await self.session.execute(
             select(Booking)
             .options(selectinload(Booking.user))
-            .where(Booking.status == status)
+            .where(
+                Booking.tenant_id == self.tenant_id,
+                Booking.status == status,
+            )
             .order_by(Booking.start_time.asc())
         )
         return list(result.scalars().all())
@@ -98,7 +122,10 @@ class BookingRepository(BaseRepository[Booking]):
                 selectinload(Booking.hall),
                 selectinload(Booking.orders).selectinload(Order.items).selectinload(OrderItem.product),
             )
-            .where(Booking.status == BookingStatus.completed)
+            .where(
+                Booking.tenant_id == self.tenant_id,
+                Booking.status == BookingStatus.completed,
+            )
             .order_by(Booking.completed_at.desc())
         )
         return list(result.scalars().all())
@@ -111,6 +138,9 @@ class BookingRepository(BaseRepository[Booking]):
                 selectinload(Booking.hall),
                 selectinload(Booking.orders).selectinload(Order.items).selectinload(OrderItem.product),
             )
-            .where(Booking.id == booking_id)
+            .where(
+                Booking.id == booking_id,
+                Booking.tenant_id == self.tenant_id,
+            )
         )
         return result.scalar_one_or_none()

@@ -7,8 +7,8 @@ from app.schemas.hall import HallCreate, HallUpdate
 
 
 class HallService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = HallRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        self.repo = HallRepository(session, tenant_id)
 
     async def create(self, data: HallCreate) -> Hall:
         existing = await self.repo.get_by_name(data.name)

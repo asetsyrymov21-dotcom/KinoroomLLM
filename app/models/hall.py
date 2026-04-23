@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Numeric, String, Text
+from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -8,9 +8,13 @@ from app.database import Base
 
 class Hall(Base):
     __tablename__ = "halls"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_halls_tenant_name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     capacity: Mapped[int] = mapped_column(nullable=False, default=1)
     price_per_hour: Mapped[Decimal] = mapped_column(
@@ -26,4 +30,4 @@ class Hall(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Hall id={self.id} name={self.name!r}>"
+        return f"<Hall id={self.id} tenant={self.tenant_id} name={self.name!r}>"

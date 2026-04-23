@@ -22,13 +22,14 @@ from app.services.loyalty import LoyaltyService
 
 
 class BookingService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
         self.session = session
-        self.repo = BookingRepository(session)
-        self.hall_repo = HallRepository(session)
+        self.tenant_id = tenant_id
+        self.repo = BookingRepository(session, tenant_id)
+        self.hall_repo = HallRepository(session, tenant_id)
 
     async def create(self, data: BookingCreate) -> Booking:
-        # Зал существует и активен
+        # Зал существует и активен (в рамках тенанта)
         hall = await self.hall_repo.get(data.hall_id)
         if hall is None or not hall.is_active:
             raise HTTPException(
@@ -61,7 +62,7 @@ class BookingService:
         if not data.is_open_ended:
             loyalty_svc = LoyaltyService(self.session)
             total_price, discount_pct, _ = await loyalty_svc.apply_to_booking(
-                user_id=data.user_id, base_price=base_price
+                user_id=data.user_id, base_price=base_price, tenant_id=self.tenant_id
             )
 
         return await self.repo.create(
@@ -76,7 +77,7 @@ class BookingService:
         )
 
     async def get_or_404(self, booking_id: int) -> Booking:
-        booking = await self.repo.get(booking_id)
+        booking = await self.repo.get_with_user(booking_id)
         if booking is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

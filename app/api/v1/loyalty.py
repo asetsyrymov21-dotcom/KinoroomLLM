@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
+from app.models.staff import Staff
 from app.schemas.loyalty import (
     LoyaltyRuleCreate,
     LoyaltyRuleRead,
     LoyaltyRuleUpdate,
     UserLoyaltyStatus,
 )
+from app.services.auth import get_current_staff
 from app.services.loyalty import LoyaltyService
 
 router = APIRouter(prefix="/loyalty", tags=["Loyalty"])
@@ -17,6 +19,7 @@ router = APIRouter(prefix="/loyalty", tags=["Loyalty"])
 async def create_rule(
     data: LoyaltyRuleCreate,
     session: AsyncSession = Depends(get_session),
+    _: Staff = Depends(get_current_staff),
 ):
     return await LoyaltyService(session).create_rule(data)
 
@@ -34,6 +37,7 @@ async def update_rule(
     rule_id: int,
     data: LoyaltyRuleUpdate,
     session: AsyncSession = Depends(get_session),
+    _: Staff = Depends(get_current_staff),
 ):
     return await LoyaltyService(session).update_rule(rule_id, data)
 
@@ -42,6 +46,7 @@ async def update_rule(
 async def delete_rule(
     rule_id: int,
     session: AsyncSession = Depends(get_session),
+    _: Staff = Depends(get_current_staff),
 ):
     await LoyaltyService(session).delete_rule(rule_id)
 
@@ -49,7 +54,8 @@ async def delete_rule(
 @router.get("/users/{user_id}", response_model=UserLoyaltyStatus)
 async def get_user_loyalty(
     user_id: int,
+    tenant_id: int = Query(1, description="ID тенанта"),
     session: AsyncSession = Depends(get_session),
 ):
     """Статус лояльности пользователя: визиты, ближайшая награда, текущая награда."""
-    return await LoyaltyService(session).get_user_status(user_id)
+    return await LoyaltyService(session).get_user_status(user_id, tenant_id)
