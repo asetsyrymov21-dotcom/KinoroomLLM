@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
 from app.models.staff import Staff, StaffRole
+from app.models.tenant import Tenant
 from app.services.auth import (
     create_token,
     get_current_staff,
@@ -27,6 +28,7 @@ class LoginResponse(BaseModel):
     token: str
     role: str
     username: str
+    tenant_id: int
 
 
 class StaffCreate(BaseModel):
@@ -40,11 +42,19 @@ class StaffRead(BaseModel):
     id: int
     username: str
     role: StaffRole
+    tenant_id: int
 
 
 class StaffUpdate(BaseModel):
     password: str | None = Field(None, min_length=6)
     role: StaffRole | None = None
+
+
+class SetupRequest(BaseModel):
+    tenant_name: str = Field(..., min_length=1, max_length=255, description="Название организации")
+    tenant_slug: str = Field(..., min_length=1, max_length=100, description="Slug тенанта (латиница, уникальный)")
+    username: str = Field(..., min_length=3, max_length=64)
+    password: str = Field(..., min_length=6)
 
 
 # ── Эндпоинты ────────────────────────────────────────────────
@@ -56,9 +66,10 @@ async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)
     if not staff or not verify_password(data.password, staff.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль")
     return LoginResponse(
-        token=create_token(staff.id, staff.role),
+        token=create_token(staff.id, staff.role, staff.tenant_id),
         role=staff.role,
         username=staff.username,
+        tenant_id=staff.tenant_id,
     )
 
 
@@ -70,9 +81,13 @@ async def get_me(current: Staff = Depends(get_current_staff)):
 @router.get("/", response_model=list[StaffRead])
 async def list_staff(
     session: AsyncSession = Depends(get_session),
-    _: Staff = Depends(require_admin),
+    current: Staff = Depends(require_admin),
 ):
-    result = await session.execute(select(Staff).order_by(Staff.created_at))
+    result = await session.execute(
+        select(Staff)
+        .where(Staff.tenant_id == current.tenant_id)
+        .order_by(Staff.created_at)
+    )
     return list(result.scalars().all())
 
 
@@ -80,12 +95,18 @@ async def list_staff(
 async def create_staff(
     data: StaffCreate,
     session: AsyncSession = Depends(get_session),
-    _: Staff = Depends(require_admin),
+    current: Staff = Depends(require_admin),
 ):
-    existing = await session.execute(select(Staff).where(Staff.username == data.username))
+    existing = await session.execute(
+        select(Staff).where(
+            Staff.tenant_id == current.tenant_id,
+            Staff.username == data.username,
+        )
+    )
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Пользователь с таким именем уже существует")
     staff = Staff(
+        tenant_id=current.tenant_id,
         username=data.username,
         password_hash=hash_password(data.password),
         role=data.role,
@@ -103,7 +124,12 @@ async def update_staff(
     session: AsyncSession = Depends(get_session),
     current: Staff = Depends(require_admin),
 ):
-    result = await session.execute(select(Staff).where(Staff.id == staff_id))
+    result = await session.execute(
+        select(Staff).where(
+            Staff.id == staff_id,
+            Staff.tenant_id == current.tenant_id,
+        )
+    )
     staff = result.scalar_one_or_none()
     if not staff:
         raise HTTPException(status_code=404, detail="Не найден")
@@ -126,7 +152,12 @@ async def delete_staff(
 ):
     if staff_id == current.id:
         raise HTTPException(status_code=400, detail="Нельзя удалить себя")
-    result = await session.execute(select(Staff).where(Staff.id == staff_id))
+    result = await session.execute(
+        select(Staff).where(
+            Staff.id == staff_id,
+            Staff.tenant_id == current.tenant_id,
+        )
+    )
     staff = result.scalar_one_or_none()
     if not staff:
         raise HTTPException(status_code=404, detail="Не найден")
@@ -134,18 +165,30 @@ async def delete_staff(
     await session.flush()
 
 
-class SetupRequest(BaseModel):
-    username: str = Field(..., min_length=3, max_length=64)
-    password: str = Field(..., min_length=6)
-
-
 @router.post("/setup", response_model=LoginResponse, status_code=201)
 async def setup_first_admin(data: SetupRequest, session: AsyncSession = Depends(get_session)):
-    """Создаёт первого admin — только если таблица staff пуста."""
-    existing = await session.execute(select(Staff))
-    if existing.scalars().first() is not None:
+    """
+    Создаёт первый тенант и первого admin.
+    Доступен только если в БД нет ни одного тенанта.
+    """
+    existing_tenant = await session.execute(select(Tenant))
+    if existing_tenant.scalars().first() is not None:
         raise HTTPException(status_code=400, detail="Первичная настройка уже выполнена")
+
+    # Проверить уникальность slug
+    slug_check = await session.execute(select(Tenant).where(Tenant.slug == data.tenant_slug))
+    if slug_check.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Tenant slug уже занят")
+
+    # Создать тенант
+    tenant = Tenant(name=data.tenant_name, slug=data.tenant_slug)
+    session.add(tenant)
+    await session.flush()
+    await session.refresh(tenant)
+
+    # Создать первого admin
     staff = Staff(
+        tenant_id=tenant.id,
         username=data.username,
         password_hash=hash_password(data.password),
         role=StaffRole.admin,
@@ -153,8 +196,10 @@ async def setup_first_admin(data: SetupRequest, session: AsyncSession = Depends(
     session.add(staff)
     await session.flush()
     await session.refresh(staff)
+
     return LoginResponse(
-        token=create_token(staff.id, staff.role),
+        token=create_token(staff.id, staff.role, tenant.id),
         role=staff.role,
         username=staff.username,
+        tenant_id=tenant.id,
     )

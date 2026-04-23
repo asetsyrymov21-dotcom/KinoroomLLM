@@ -1,16 +1,16 @@
 from datetime import datetime
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.stock import MovementType, StockBalance, StockLocation, StockMovement
-from app.repositories.base import BaseRepository
+from app.repositories.base import TenantScopedRepository
 
 
-class StockLocationRepository(BaseRepository[StockLocation]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(StockLocation, session)
+class StockLocationRepository(TenantScopedRepository[StockLocation]):
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        super().__init__(StockLocation, session, tenant_id)
 
     async def get_by_hall_and_product(
         self, hall_id: int, product_id: int
@@ -19,6 +19,7 @@ class StockLocationRepository(BaseRepository[StockLocation]):
             select(StockLocation)
             .options(selectinload(StockLocation.balance))
             .where(
+                StockLocation.tenant_id == self.tenant_id,
                 StockLocation.hall_id == hall_id,
                 StockLocation.product_id == product_id,
             )
@@ -32,7 +33,10 @@ class StockLocationRepository(BaseRepository[StockLocation]):
                 selectinload(StockLocation.balance),
                 selectinload(StockLocation.product),
             )
-            .where(StockLocation.hall_id == hall_id)
+            .where(
+                StockLocation.tenant_id == self.tenant_id,
+                StockLocation.hall_id == hall_id,
+            )
         )
         return list(result.scalars().all())
 
@@ -43,14 +47,15 @@ class StockLocationRepository(BaseRepository[StockLocation]):
         return loc
 
 
-class StockBalanceRepository(BaseRepository[StockBalance]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(StockBalance, session)
+class StockBalanceRepository(TenantScopedRepository[StockBalance]):
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        super().__init__(StockBalance, session, tenant_id)
 
     async def get_by_location(self, stock_location_id: int) -> StockBalance | None:
         result = await self.session.execute(
             select(StockBalance).where(
-                StockBalance.stock_location_id == stock_location_id
+                StockBalance.tenant_id == self.tenant_id,
+                StockBalance.stock_location_id == stock_location_id,
             )
         )
         return result.scalar_one_or_none()
@@ -66,9 +71,9 @@ class StockBalanceRepository(BaseRepository[StockBalance]):
         return bal
 
 
-class StockMovementRepository(BaseRepository[StockMovement]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(StockMovement, session)
+class StockMovementRepository(TenantScopedRepository[StockMovement]):
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        super().__init__(StockMovement, session, tenant_id)
 
     async def log(
         self,
@@ -94,7 +99,10 @@ class StockMovementRepository(BaseRepository[StockMovement]):
     async def get_by_hall(self, hall_id: int) -> list[StockMovement]:
         result = await self.session.execute(
             select(StockMovement)
-            .where(StockMovement.hall_id == hall_id)
+            .where(
+                StockMovement.tenant_id == self.tenant_id,
+                StockMovement.hall_id == hall_id,
+            )
             .order_by(StockMovement.created_at.desc())
         )
         return list(result.scalars().all())
@@ -112,6 +120,7 @@ class StockMovementRepository(BaseRepository[StockMovement]):
                 func.max(StockMovement.created_at).label("last_at"),
             )
             .where(
+                StockMovement.tenant_id == self.tenant_id,
                 StockMovement.hall_id == hall_id,
                 StockMovement.movement_type == MovementType.receive,
             )

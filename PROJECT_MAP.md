@@ -53,14 +53,16 @@
 
 | Файл | Модели | Таблицы | Ключевые поля |
 |------|--------|---------|---------------|
-| `app/models/user.py` | `User` | `users` | `telegram_id` (BigInt, unique), `name`, `phone` |
-| `app/models/hall.py` | `Hall` | `halls` | `name` (unique), `capacity`, `price_per_hour`, `is_active` |
-| `app/models/booking.py` | `Booking`, `BookingStatus` | `bookings` | `user_id`, `hall_id`, `start_time`, `end_time`, `status`, `total_price`, `completed_at`, `discount_pct`, `extra_charge` |
-| `app/models/product.py` | `Product` | `products` | `name`, `sku` (unique), `price`, `cost_price`, `unit`, `is_active`, `category_id` |
-| `app/models/category.py` | `Category` | `categories` | `name` (unique), `emoji`, `position`, `is_active` |
-| `app/models/loyalty.py` | `LoyaltyRule`, `RewardType` | `loyalty_rules` | `visits_required`, `reward_type` (discount/free_booking), `reward_value`, `is_active` |
-| `app/models/stock.py` | `StockLocation`, `StockBalance`, `StockMovement`, `MovementType` | `stock_locations`, `stock_balances`, `stock_movements` | `StockLocation` связывает hall+product; `StockBalance` хранит `quantity`/`reserved_quantity`; `StockMovement` — лог (receive/reserve/write_off/cancel_reserve) |
-| `app/models/order.py` | `Order`, `OrderItem`, `OrderStatus` | `orders`, `order_items` | `Order.booking_id`, `OrderItem.product_id`, `quantity`, `price_at_order` |
+| `app/models/tenant.py` | `Tenant` | `tenants` | `name`, `slug` (unique), `is_active` |
+| `app/models/user.py` | `User` | `users` | `telegram_id` (BigInt, unique), `name`, `phone` — глобальная таблица, без tenant_id |
+| `app/models/hall.py` | `Hall` | `halls` | `tenant_id`, `name` (unique per tenant), `capacity`, `price_per_hour`, `is_active` |
+| `app/models/booking.py` | `Booking`, `BookingStatus` | `bookings` | `tenant_id`, `user_id`, `hall_id`, `start_time`, `end_time`, `status`, `total_price`, `completed_at`, `discount_pct`, `extra_charge` |
+| `app/models/product.py` | `Product` | `products` | `tenant_id`, `name`, `sku` (unique per tenant), `price`, `cost_price`, `unit`, `is_active`, `category_id` |
+| `app/models/category.py` | `Category` | `categories` | `tenant_id`, `name` (unique per tenant), `emoji`, `position`, `is_active` |
+| `app/models/loyalty.py` | `LoyaltyRule`, `RewardType` | `loyalty_rules` | `visits_required`, `reward_type` (discount/free_booking), `reward_value`, `is_active` — общая таблица, не тенантная |
+| `app/models/stock.py` | `StockLocation`, `StockBalance`, `StockMovement`, `MovementType` | `stock_locations`, `stock_balances`, `stock_movements` | `tenant_id` во всех трёх; `StockLocation` связывает hall+product; `StockBalance` хранит `quantity`/`reserved_quantity`; `StockMovement` — лог |
+| `app/models/order.py` | `Order`, `OrderItem`, `OrderStatus` | `orders`, `order_items` | `tenant_id` в обоих; `Order.booking_id`, `OrderItem.product_id`, `quantity`, `price_at_order` |
+| `app/models/staff.py` | `Staff`, `StaffRole` | `staff` | `tenant_id`, `username` (unique per tenant), `password_hash`, `role` (admin/operator) |
 
 ---
 
@@ -105,6 +107,8 @@
 | `alembic/versions/003_add_is_open_ended.py` | `003` | Добавляет `is_open_ended` в `bookings` |
 | `alembic/versions/004_categories_loyalty.py` | `004` | Таблицы `categories`, `loyalty_rules`; колонки `cost_price`/`category_id` в `products`; `discount_pct` в `bookings` |
 | `alembic/versions/005_add_extra_charge.py` | `005` | Добавляет `extra_charge` (Numeric 10,2, nullable) в `bookings` |
+| `alembic/versions/008_add_staff.py` | `008` | Таблица `staff` (id, username, password_hash, role, created_at) |
+| `alembic/versions/009_add_multitenancy.py` | `009` | Таблица `tenants`; добавляет `tenant_id` в halls, bookings, products, categories, orders, order_items, staff, stock_locations, stock_balances, stock_movements; пересоздаёт unique constraints как per-tenant |
 
 Применить миграции: `alembic upgrade head`
 

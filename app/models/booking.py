@@ -19,6 +19,9 @@ class Booking(Base):
     __tablename__ = "bookings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     hall_id: Mapped[int] = mapped_column(ForeignKey("halls.id"), nullable=False)
     start_time: Mapped[datetime] = mapped_column(
@@ -55,6 +58,6 @@ class Booking(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<Booking id={self.id} hall_id={self.hall_id} "
+            f"<Booking id={self.id} tenant={self.tenant_id} hall_id={self.hall_id} "
             f"status={self.status} {self.start_time}–{self.end_time}>"
         )

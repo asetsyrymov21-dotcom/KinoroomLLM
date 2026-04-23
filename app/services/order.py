@@ -23,18 +23,19 @@ from app.services.stock import StockService
 
 
 class OrderService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = OrderRepository(session)
-        self.item_repo = OrderItemRepository(session)
-        self.booking_repo = BookingRepository(session)
-        self.product_repo = ProductRepository(session)
-        self.stock_svc = StockService(session)
-        self.loc_repo = StockLocationRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        self.tenant_id = tenant_id
+        self.repo = OrderRepository(session, tenant_id)
+        self.item_repo = OrderItemRepository(session, tenant_id)
+        self.booking_repo = BookingRepository(session, tenant_id)
+        self.product_repo = ProductRepository(session, tenant_id)
+        self.stock_svc = StockService(session, tenant_id)
+        self.loc_repo = StockLocationRepository(session, tenant_id)
 
     # ──────────────────────────── создание заказа ──────────────────────────────
 
     async def create(self, data: OrderCreate) -> Order:
-        """Создать новый заказ. Бронь должна быть active."""
+        """Создать новый заказ. Бронь должна быть active или pending."""
         booking = await self.booking_repo.get(data.booking_id)
         if booking is None:
             raise HTTPException(

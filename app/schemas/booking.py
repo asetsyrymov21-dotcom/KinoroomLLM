@@ -7,6 +7,7 @@ from app.models.booking import BookingStatus
 
 
 class BookingCreate(BaseModel):
+    tenant_id: int = 1  # передаётся мини-аппом; default=1 для обратной совместимости
     user_id: int
     hall_id: int
     start_time: datetime

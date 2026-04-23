@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
+from app.models.staff import Staff
 from app.schemas.order import OrderCreate, OrderItemAdd, OrderItemRead, OrderRead
+from app.services.auth import get_current_staff
 from app.services.order import OrderService
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -11,13 +13,15 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 @router.post("/", response_model=OrderRead, status_code=201)
 async def create_order(
     data: OrderCreate,
+    tenant_id: int = Query(1, description="ID тенанта"),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Создать заказ для активной брони.
-    Бронь должна иметь статус active.
+    Бронь должна иметь статус active или pending.
+    tenant_id передаётся query-параметром (мини-апп) или берётся из JWT (оператор).
     """
-    svc = OrderService(session)
+    svc = OrderService(session, tenant_id)
     return await svc.create(data)
 
 
@@ -25,18 +29,20 @@ async def create_order(
 async def get_order(
     order_id: int,
     session: AsyncSession = Depends(get_session),
+    current: Staff = Depends(get_current_staff),
 ):
-    svc = OrderService(session)
+    svc = OrderService(session, current.tenant_id)
     return await svc.get_or_404(order_id)
 
 
 @router.get("/booking/{booking_id}", response_model=list[OrderRead])
 async def list_orders_by_booking(
     booking_id: int,
+    tenant_id: int = Query(1, description="ID тенанта"),
     session: AsyncSession = Depends(get_session),
 ):
     """Все заказы по брони."""
-    svc = OrderService(session)
+    svc = OrderService(session, tenant_id)
     return await svc.list_by_booking(booking_id)
 
 
@@ -44,9 +50,10 @@ async def list_orders_by_booking(
 async def list_pending_orders(
     booking_id: int,
     session: AsyncSession = Depends(get_session),
+    current: Staff = Depends(get_current_staff),
 ):
     """Висящие (pending) заказы — экран оператора."""
-    svc = OrderService(session)
+    svc = OrderService(session, current.tenant_id)
     return await svc.list_pending(booking_id)
 
 
@@ -54,13 +61,14 @@ async def list_pending_orders(
 async def add_item(
     order_id: int,
     data: OrderItemAdd,
+    tenant_id: int = Query(1, description="ID тенанта"),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Добавить позицию в заказ.
     Автоматически резервирует товар на складе зала.
     """
-    svc = OrderService(session)
+    svc = OrderService(session, tenant_id)
     return await svc.add_item(order_id, data)
 
 
@@ -68,12 +76,13 @@ async def add_item(
 async def complete_order(
     order_id: int,
     session: AsyncSession = Depends(get_session),
+    current: Staff = Depends(get_current_staff),
 ):
     """
     Оператор нажал «Выполнено».
     Списывает зарезервированный товар со склада.
     """
-    svc = OrderService(session)
+    svc = OrderService(session, current.tenant_id)
     return await svc.complete(order_id)
 
 
@@ -81,7 +90,8 @@ async def complete_order(
 async def cancel_order(
     order_id: int,
     session: AsyncSession = Depends(get_session),
+    current: Staff = Depends(get_current_staff),
 ):
     """Отменить заказ — снять резервы."""
-    svc = OrderService(session)
+    svc = OrderService(session, current.tenant_id)
     return await svc.cancel(order_id)

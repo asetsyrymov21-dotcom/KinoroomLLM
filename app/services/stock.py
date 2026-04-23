@@ -16,12 +16,13 @@ from app.schemas.stock import HallInventoryItem, StockReceiveRequest
 
 
 class StockService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.loc_repo = StockLocationRepository(session)
-        self.bal_repo = StockBalanceRepository(session)
-        self.mov_repo = StockMovementRepository(session)
-        self.hall_repo = HallRepository(session)
-        self.prod_repo = ProductRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        self.tenant_id = tenant_id
+        self.loc_repo = StockLocationRepository(session, tenant_id)
+        self.bal_repo = StockBalanceRepository(session, tenant_id)
+        self.mov_repo = StockMovementRepository(session, tenant_id)
+        self.hall_repo = HallRepository(session, tenant_id)
+        self.prod_repo = ProductRepository(session, tenant_id)
 
     async def receive(self, req: StockReceiveRequest) -> StockBalance:
         """Загрузить товар в зал (приход)."""
@@ -59,7 +60,7 @@ class StockService:
         return loc.balance
 
     async def get_hall_inventory(self, hall_id: int) -> list[HallInventoryItem]:
-        # Все активные товары
+        # Все активные товары тенанта
         all_products = await self.prod_repo.get_active()
 
         # Остатки по залу: {product_id: StockLocation}

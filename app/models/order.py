@@ -18,6 +18,9 @@ class Order(Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id"), nullable=False)
     status: Mapped[OrderStatus] = mapped_column(
         String(20), nullable=False, default=OrderStatus.pending
@@ -35,13 +38,16 @@ class Order(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Order id={self.id} booking={self.booking_id} status={self.status}>"
+        return f"<Order id={self.id} tenant={self.tenant_id} booking={self.booking_id} status={self.status}>"
 
 
 class OrderItem(Base):
     __tablename__ = "order_items"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -52,6 +58,6 @@ class OrderItem(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<OrderItem id={self.id} order={self.order_id} "
+            f"<OrderItem id={self.id} tenant={self.tenant_id} order={self.order_id} "
             f"product={self.product_id} qty={self.quantity}>"
         )

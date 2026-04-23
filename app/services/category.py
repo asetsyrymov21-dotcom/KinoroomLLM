@@ -7,8 +7,8 @@ from app.schemas.category import CategoryCreate, CategoryUpdate
 
 
 class CategoryService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = CategoryRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        self.repo = CategoryRepository(session, tenant_id)
 
     async def create(self, data: CategoryCreate) -> Category:
         existing = await self.repo.get_by_name(data.name)

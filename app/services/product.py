@@ -7,8 +7,8 @@ from app.schemas.product import ProductCreate, ProductUpdate
 
 
 class ProductService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = ProductRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        self.repo = ProductRepository(session, tenant_id)
 
     async def create(self, data: ProductCreate) -> Product:
         if data.sku:

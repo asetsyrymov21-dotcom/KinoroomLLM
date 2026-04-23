@@ -3,18 +3,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.order import Order, OrderItem, OrderStatus
-from app.repositories.base import BaseRepository
+from app.repositories.base import TenantScopedRepository
 
 
-class OrderRepository(BaseRepository[Order]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(Order, session)
+class OrderRepository(TenantScopedRepository[Order]):
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        super().__init__(Order, session, tenant_id)
 
     async def get_with_items(self, id: int) -> Order | None:
         result = await self.session.execute(
             select(Order)
             .options(selectinload(Order.items))
-            .where(Order.id == id)
+            .where(
+                Order.id == id,
+                Order.tenant_id == self.tenant_id,
+            )
         )
         return result.scalar_one_or_none()
 
@@ -23,6 +26,7 @@ class OrderRepository(BaseRepository[Order]):
             select(Order)
             .options(selectinload(Order.items))
             .where(
+                Order.tenant_id == self.tenant_id,
                 Order.booking_id == booking_id,
                 Order.status == OrderStatus.pending,
             )
@@ -34,12 +38,15 @@ class OrderRepository(BaseRepository[Order]):
         result = await self.session.execute(
             select(Order)
             .options(selectinload(Order.items))
-            .where(Order.booking_id == booking_id)
+            .where(
+                Order.tenant_id == self.tenant_id,
+                Order.booking_id == booking_id,
+            )
             .order_by(Order.created_at.desc())
         )
         return list(result.scalars().all())
 
 
-class OrderItemRepository(BaseRepository[OrderItem]):
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__(OrderItem, session)
+class OrderItemRepository(TenantScopedRepository[OrderItem]):
+    def __init__(self, session: AsyncSession, tenant_id: int) -> None:
+        super().__init__(OrderItem, session, tenant_id)

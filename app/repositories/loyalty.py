@@ -24,11 +24,12 @@ class LoyaltyRepository(BaseRepository[LoyaltyRule]):
         )
         return list(result.scalars().all())
 
-    async def count_completed_visits(self, user_id: int) -> int:
-        """Количество завершённых бронирований пользователя."""
+    async def count_completed_visits(self, user_id: int, tenant_id: int) -> int:
+        """Количество завершённых бронирований пользователя в рамках тенанта."""
         result = await self.session.execute(
             select(func.count(Booking.id)).where(
                 Booking.user_id == user_id,
+                Booking.tenant_id == tenant_id,
                 Booking.status == BookingStatus.completed,
             )
         )
