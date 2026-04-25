@@ -24,12 +24,18 @@ router = APIRouter(prefix="/tenants", tags=["Tenants (superadmin)"])
 class TenantCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     slug: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9_-]+$")
+    address: str | None = Field(None, max_length=500)
+    phone: str | None = Field(None, max_length=50)
+    logo_url: str | None = Field(None, max_length=1000)
 
 
 class TenantUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=255)
     slug: str | None = Field(None, min_length=1, max_length=100, pattern=r"^[a-z0-9_-]+$")
     is_active: bool | None = None
+    address: str | None = Field(None, max_length=500)
+    phone: str | None = Field(None, max_length=50)
+    logo_url: str | None = Field(None, max_length=1000)
 
 
 class TenantRead(BaseModel):
@@ -38,6 +44,9 @@ class TenantRead(BaseModel):
     name: str
     slug: str
     is_active: bool
+    address: str | None = None
+    phone: str | None = None
+    logo_url: str | None = None
 
 
 class TenantStaffRead(BaseModel):
@@ -70,6 +79,17 @@ async def list_tenants(
     return list(result.scalars().all())
 
 
+@router.get("/public", response_model=list[TenantRead], tags=["Public"])
+async def list_tenants_public(
+    session: AsyncSession = Depends(get_session),
+):
+    """Публичный список активных кинорумов — для экрана выбора в мини-аппе."""
+    result = await session.execute(
+        select(Tenant).where(Tenant.is_active == True).order_by(Tenant.id)
+    )
+    return list(result.scalars().all())
+
+
 @router.post("", response_model=TenantRead, status_code=201)
 async def create_tenant(
     data: TenantCreate,
@@ -79,7 +99,10 @@ async def create_tenant(
     existing = await session.execute(select(Tenant).where(Tenant.slug == data.slug))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Slug уже занят")
-    tenant = Tenant(name=data.name, slug=data.slug)
+    tenant = Tenant(
+        name=data.name, slug=data.slug,
+        address=data.address, phone=data.phone, logo_url=data.logo_url,
+    )
     session.add(tenant)
     await session.flush()
     await session.refresh(tenant)
@@ -119,6 +142,12 @@ async def update_tenant(
         tenant.slug = data.slug
     if data.is_active is not None:
         tenant.is_active = data.is_active
+    if data.address is not None:
+        tenant.address = data.address
+    if data.phone is not None:
+        tenant.phone = data.phone
+    if data.logo_url is not None:
+        tenant.logo_url = data.logo_url
     await session.flush()
     return tenant
 

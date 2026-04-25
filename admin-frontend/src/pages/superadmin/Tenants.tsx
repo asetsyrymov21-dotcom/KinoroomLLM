@@ -7,6 +7,9 @@ import Modal from '../../components/Modal'
 interface TenantFormData {
   name: string
   slug: string
+  address: string
+  phone: string
+  logo_url: string
 }
 
 interface AdminFormData {
@@ -28,7 +31,7 @@ export default function Tenants() {
   // Create/Edit tenant modal
   const [showModal, setShowModal] = useState(false)
   const [editTenant, setEditTenant] = useState<Tenant | null>(null)
-  const [form, setForm] = useState<TenantFormData>({ name: '', slug: '' })
+  const [form, setForm] = useState<TenantFormData>({ name: '', slug: '', address: '', phone: '', logo_url: '' })
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -60,14 +63,14 @@ export default function Tenants() {
 
   function openCreate() {
     setEditTenant(null)
-    setForm({ name: '', slug: '' })
+    setForm({ name: '', slug: '', address: '', phone: '', logo_url: '' })
     setFormError('')
     setShowModal(true)
   }
 
   function openEdit(t: Tenant) {
     setEditTenant(t)
-    setForm({ name: t.name, slug: t.slug })
+    setForm({ name: t.name, slug: t.slug, address: t.address ?? '', phone: t.phone ?? '', logo_url: t.logo_url ?? '' })
     setFormError('')
     setShowModal(true)
   }
@@ -77,10 +80,16 @@ export default function Tenants() {
     setSaving(true)
     setFormError('')
     try {
+      const body = {
+        name: form.name, slug: form.slug,
+        address: form.address || null,
+        phone: form.phone || null,
+        logo_url: form.logo_url || null,
+      }
       if (editTenant) {
-        await api.patch(`/tenants/${editTenant.id}`, form)
+        await api.patch(`/tenants/${editTenant.id}`, body)
       } else {
-        await api.post('/tenants', form)
+        await api.post('/tenants', body)
       }
       setShowModal(false)
       await load()
@@ -263,6 +272,33 @@ export default function Tenants() {
                 required
               />
               <p className="text-xs text-gray-400 mt-1">Только строчные латинские буквы, цифры, `-` и `_`</p>
+            </div>
+            <div>
+              <label className="label">Адрес <span className="text-gray-400 font-normal">— необязательно</span></label>
+              <input
+                className="input"
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="ул. Абая 10, Алматы"
+              />
+            </div>
+            <div>
+              <label className="label">Телефон <span className="text-gray-400 font-normal">— необязательно</span></label>
+              <input
+                className="input"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+7 (777) 000-00-00"
+              />
+            </div>
+            <div>
+              <label className="label">URL логотипа/фото <span className="text-gray-400 font-normal">— необязательно</span></label>
+              <input
+                className="input"
+                value={form.logo_url}
+                onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
+                placeholder="https://..."
+              />
             </div>
             {formError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{formError}</p>}
             <div className="flex gap-3 pt-2">

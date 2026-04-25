@@ -38,6 +38,9 @@ export interface Tenant {
   name: string
   slug: string
   is_active: boolean
+  address: string | null
+  phone: string | null
+  logo_url: string | null
 }
 
 export interface Hall {
