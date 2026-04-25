@@ -11,7 +11,7 @@ from app.services.booking import BookingService
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
 
-@router.get("/", response_model=list[BookingRead])
+@router.get("", response_model=list[BookingRead])
 async def list_bookings(
     status: BookingStatus | None = Query(None, description="Фильтр по статусу"),
     session: AsyncSession = Depends(get_session),
@@ -28,7 +28,7 @@ async def list_bookings(
     return await svc.list_all()
 
 
-@router.post("/", response_model=BookingRead, status_code=201)
+@router.post("", response_model=BookingRead, status_code=201)
 async def create_booking(
     data: BookingCreate,
     session: AsyncSession = Depends(get_session),

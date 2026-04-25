@@ -10,7 +10,7 @@ from app.services.product import ProductService
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-@router.post("/", response_model=ProductRead, status_code=201)
+@router.post("", response_model=ProductRead, status_code=201)
 async def create_product(
     data: ProductCreate,
     session: AsyncSession = Depends(get_session),
@@ -21,7 +21,7 @@ async def create_product(
     return await svc.create(data)
 
 
-@router.get("/", response_model=list[ProductRead])
+@router.get("", response_model=list[ProductRead])
 async def list_products(
     active_only: bool = True,
     tenant_id: int = Query(1, description="ID тенанта"),

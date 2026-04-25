@@ -9,6 +9,7 @@ from app.api.v1 import halls, products, bookings, stock, orders, users, categori
 
 app = FastAPI(
     title="Kinorum API",
+    redirect_slashes=False,
     description=(
         "Backend для управления залами, бронированием и складом.\n\n"
         "## Основные флоу\n"

@@ -163,9 +163,10 @@ cd admin-frontend && npm install && npm run build
 | `.gitignore` | Исключает `.env`, `__pycache__`, `venv/`, `admin-frontend/node_modules/`, IDE-файлы. `admin-dist/` коммитится. |
 | `requirements.txt` | Python-зависимости: fastapi, uvicorn, sqlalchemy, asyncpg, alembic, pydantic, pydantic-settings |
 | `Dockerfile` | Образ приложения |
-| `docker-compose.yml` | 3 сервиса: `db` (postgres:15), `migrate` (alembic upgrade head), `api` (uvicorn :8001) |
+| `docker-compose.yml` | 3 сервиса: `db` (postgres:15), `migrate` (alembic upgrade head), `api` (uvicorn :8000 внутри контейнера) |
+| `nginx.conf` | Nginx: `/` → статика, `/api/` → proxy `http://api:8000`, `/admin` → `admin-dist/`, `/operator.html` → legacy |
 | `alembic.ini` | Конфиг Alembic |
-| `deploy.sh` | Скрипт деплоя (см. ниже) |
+| `deploy.ps1` | Windows/PowerShell скрипт деплоя — запускать только локально, не на VPS |
 
 ---
 
@@ -211,12 +212,15 @@ docker compose restart nginx
 
 | Контейнер | Имя | Порт |
 |-----------|-----|------|
-| API (FastAPI) | `kinoroom-api-1` | — (внутренний) |
-| Nginx | `kinoroom-nginx-1` | `0.0.0.0:8001→80` |
-| PostgreSQL | `kinoroom-db-1` | `127.0.0.1:5433→5432` |
+| API (FastAPI) | `kinoroom-api-1` | внутренний :8000 (снаружи недоступен напрямую) |
+| Nginx | `kinoroom-nginx-1` | `0.0.0.0:8001→80` (внешний порт VPS — 8001) |
+| PostgreSQL | `kinoroom-db-1` | `127.0.0.1:5433→5432` (только localhost VPS) |
 
 > ⚠️ На VPS **нет** `docker compose` (plugin) и `docker-compose` (standalone).
 > Управление контейнерами — только через `docker logs`, `docker ps`, `docker restart` и т.д.
+>
+> ⚠️ Прямой доступ `http://178.104.156.114:8001` из браузера не работает — ISP блокирует порт 8001.
+> Используй Cloudflare Tunnel (см. ниже).
 
 **Логи API (правильная команда):**
 ```bash
