@@ -22,7 +22,7 @@ router = APIRouter(prefix="/staff", tags=["Staff"])
 
 class LoginRequest(BaseModel):
     username: str
-    password: str
+    password: str = Field(..., max_length=72)
 
 
 class LoginResponse(BaseModel):
@@ -34,7 +34,7 @@ class LoginResponse(BaseModel):
 
 class StaffCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=64)
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=6, max_length=72)
     role: StaffRole = StaffRole.operator
 
 
@@ -47,7 +47,7 @@ class StaffRead(BaseModel):
 
 
 class StaffUpdate(BaseModel):
-    password: str | None = Field(None, min_length=6)
+    password: str | None = Field(None, min_length=6, max_length=72)
     role: StaffRole | None = None
 
 
@@ -55,7 +55,7 @@ class SetupRequest(BaseModel):
     tenant_name: str = Field(..., min_length=1, max_length=255, description="Название организации")
     tenant_slug: str = Field(..., min_length=1, max_length=100, description="Slug тенанта (латиница, уникальный)")
     username: str = Field(..., min_length=3, max_length=64)
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=6, max_length=72)
 
 
 # ── Эндпоинты ────────────────────────────────────────────────
