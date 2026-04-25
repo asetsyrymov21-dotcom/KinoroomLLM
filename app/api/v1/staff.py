@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
+from app.config import settings
 from app.models.staff import Staff, StaffRole
 from app.models.tenant import Tenant
 from app.services.auth import (
@@ -28,7 +29,7 @@ class LoginResponse(BaseModel):
     token: str
     role: str
     username: str
-    tenant_id: int
+    tenant_id: int | None = None
 
 
 class StaffCreate(BaseModel):
@@ -61,6 +62,18 @@ class SetupRequest(BaseModel):
 
 @router.post("/login", response_model=LoginResponse)
 async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)):
+    # Проверяем superadmin через env (нет записи в БД)
+    if (
+        data.username == settings.SUPERADMIN_USERNAME
+        and data.password == settings.SUPERADMIN_PASSWORD
+    ):
+        return LoginResponse(
+            token=create_token(None, "superadmin", None),
+            role="superadmin",
+            username=settings.SUPERADMIN_USERNAME,
+            tenant_id=None,
+        )
+
     result = await session.execute(select(Staff).where(Staff.username == data.username))
     staff = result.scalar_one_or_none()
     if not staff or not verify_password(data.password, staff.password_hash):
