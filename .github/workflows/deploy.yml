@@ -17,9 +17,11 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
+          script_stop: true
           script: |
             cd /opt/kinoroom
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             docker compose up -d --build --no-recreate db
             docker compose run --rm migrate
             docker compose up -d --build api nginx
