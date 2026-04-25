@@ -21,6 +21,7 @@ class BookingRepository(TenantScopedRepository[Booking]):
                 Booking.id == id,
                 Booking.tenant_id == self.tenant_id,
             )
+            .execution_options(populate_existing=True)
         )
         return result.scalar_one_or_none()
 
@@ -85,6 +86,7 @@ class BookingRepository(TenantScopedRepository[Booking]):
     async def get_by_user(self, user_id: int) -> list[Booking]:
         result = await self.session.execute(
             select(Booking)
+            .options(selectinload(Booking.user))
             .where(
                 Booking.tenant_id == self.tenant_id,
                 Booking.user_id == user_id,
