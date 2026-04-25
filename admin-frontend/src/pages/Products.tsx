@@ -39,7 +39,7 @@ export default function Products() {
   function openEdit(p: Product) {
     setEditProd(p)
     setForm({
-      name: p.name, sku: p.sku, price: String(p.price),
+      name: p.name, sku: p.sku ?? '', price: String(p.price),
       cost_price: p.cost_price != null ? String(p.cost_price) : '',
       unit: p.unit, is_active: p.is_active, category_id: p.category_id ? String(p.category_id) : ''
     })
@@ -49,7 +49,7 @@ export default function Products() {
   async function handleSave(e: FormEvent) {
     e.preventDefault(); setSaving(true); setFormError('')
     const body = {
-      name: form.name, sku: form.sku, price: Number(form.price),
+      name: form.name, sku: form.sku.trim() || null, price: Number(form.price),
       cost_price: form.cost_price ? Number(form.cost_price) : null,
       unit: form.unit, is_active: form.is_active,
       category_id: form.category_id ? Number(form.category_id) : null,
@@ -114,8 +114,8 @@ export default function Products() {
             <div className="grid grid-cols-2 gap-4">
               <div><label className="label">Название</label>
                 <input className="input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></div>
-              <div><label className="label">SKU (артикул)</label>
-                <input className="input font-mono" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} required /></div>
+              <div><label className="label">SKU (артикул) <span className="text-gray-400 font-normal">— необязательно</span></label>
+                <input className="input font-mono" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} placeholder="A-001" /></div>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div><label className="label">Цена (₸)</label>

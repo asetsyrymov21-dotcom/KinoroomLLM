@@ -55,6 +55,7 @@ export interface Category {
   emoji: string | null
   position: number
   is_active: boolean
+  parent_id: number | null
 }
 
 export interface Product {

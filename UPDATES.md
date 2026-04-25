@@ -13,6 +13,33 @@
 
 ---
 
+## [2026-04-25] Фиксы мультитенантности и инфраструктуры
+
+**Проблемы, которые были:**
+1. `POST /api/v1/tenants` возвращал 307 Temporary Redirect → Authorization-заголовок терялся → "Ошибка"
+2. Все GET-эндпоинты использовали `tenant_id=Query(1)` — всегда возвращали данные тенанта 1
+3. `passlib[bcrypt]` несовместим с `bcrypt>=4.x` — `detect_wrap_bug` падал с ValueError при любом хэшировании
+
+**Что исправили:**
+- `redirect_slashes=False` в `FastAPI()` + все collection-роуты `"/"` → `""` (halls, products, categories, bookings, orders, staff, tenants, users)
+- Новая зависимость `resolve_tenant_id` в `app/api/deps.py` — берёт `tenant_id` из JWT (admin-панель) или query param (мини-апп), fallback=1
+- Заменили `passlib` на прямой `bcrypt` в `app/services/auth.py`; убрали `passlib[bcrypt]` из `requirements.txt`
+- `max_length=72` на всех полях `password` во всех схемах (bcrypt limit)
+
+**Новые фичи:**
+- `GET /api/v1/tenants/{id}/staff` — суперадмин видит сотрудников тенанта
+- Кнопка «Сотрудники» в `admin-frontend` → модал со списком
+- `parent_id` в UI категорий (в модели и схеме уже был) — выбор родительской категории, иерархия в таблице
+- SKU товара необязателен во фронте; пустая строка → `null` (fix unique constraint)
+
+**Затронутые файлы:**
+- `app/main.py`, `app/api/deps.py`, `app/services/auth.py`, `requirements.txt`
+- `app/api/v1/halls.py`, `categories.py`, `products.py`, `bookings.py`, `orders.py`, `loyalty.py`, `tenants.py`, `staff.py`, `users.py`
+- `admin-frontend/src/pages/Categories.tsx`, `Products.tsx`, `superadmin/Tenants.tsx`
+- `admin-frontend/src/lib/api.ts`
+
+---
+
 ## [2026-04] Мультитенантность
 
 **Что добавили:**

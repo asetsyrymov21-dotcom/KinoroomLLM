@@ -827,7 +827,7 @@
           : 'Гость';
 
         // Auth: get_or_create user
-        const user = await apiFetch('/api/v1/users/', {
+        const user = await apiFetch('/api/v1/users', {
           method: 'POST',
           body: JSON.stringify({ telegram_id: telegramId, name }),
         });
@@ -1409,7 +1409,7 @@
         const end = state.openEnded
           ? new Date(start.getTime() + 12 * 3600 * 1000)
           : toDateTime(state.selectedDate, state.selectedEnd);
-        const booking = await apiFetch('/api/v1/bookings/', {
+        const booking = await apiFetch('/api/v1/bookings', {
           method: 'POST',
           body: JSON.stringify({
             user_id:       state.user.id,
@@ -1422,7 +1422,7 @@
 
         if (cartItems.length > 0) {
           btn.textContent = 'Оформляем предзаказ...';
-          const order = await apiFetch('/api/v1/orders/', {
+          const order = await apiFetch('/api/v1/orders', {
             method: 'POST',
             body: JSON.stringify({ booking_id: booking.id }),
           });
@@ -1780,7 +1780,7 @@
       btn.textContent = 'Отправляем...';
       try {
         // 1. Create order
-        const order = await apiFetch('/api/v1/orders/', {
+        const order = await apiFetch('/api/v1/orders', {
           method: 'POST',
           body: JSON.stringify({ booking_id: state.activeBooking.id }),
         });

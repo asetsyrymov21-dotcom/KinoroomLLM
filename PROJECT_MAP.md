@@ -248,7 +248,7 @@ docker exec -it kinoroom-api-1 bash
 
 - Приложение запускается на порту **8001**
 - Публичный доступ: **Cloudflare Tunnel** (активный) + ngrok (запасной)
-- Текущий URL Cloudflare: меняется при каждом перезапуске туннеля (`*.trycloudflare.com`)
+- Текущий URL Cloudflare: `https://anonymous-sitting-judicial-colors.trycloudflare.com` (меняется при перезапуске туннеля)
 - Панель управления: `https://<текущий-url>/admin` (React-SPA, роли: superadmin / admin / operator)
 - Операторка (legacy): `https://<текущий-url>/operator.html`
 - Первичная настройка: `https://<текущий-url>/setup.html`
