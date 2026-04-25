@@ -14,6 +14,12 @@ interface AdminFormData {
   password: string
 }
 
+interface StaffMember {
+  id: number
+  username: string
+  role: string
+}
+
 export default function Tenants() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,12 +32,17 @@ export default function Tenants() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
 
-  // Create first admin modal
+  // Create admin modal
   const [adminModalTenant, setAdminModalTenant] = useState<Tenant | null>(null)
   const [adminForm, setAdminForm] = useState<AdminFormData>({ username: '', password: '' })
   const [adminSaving, setAdminSaving] = useState(false)
   const [adminResult, setAdminResult] = useState('')
   const [adminError, setAdminError] = useState('')
+
+  // Staff list modal
+  const [staffModalTenant, setStaffModalTenant] = useState<Tenant | null>(null)
+  const [staffList, setStaffList] = useState<StaffMember[]>([])
+  const [staffLoading, setStaffLoading] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -122,6 +133,23 @@ export default function Tenants() {
     }
   }
 
+  async function openStaffModal(t: Tenant) {
+    setStaffModalTenant(t)
+    setStaffList([])
+    setStaffLoading(true)
+    try {
+      const { data } = await api.get<StaffMember[]>(`/tenants/${t.id}/staff`)
+      setStaffList(data)
+    } finally {
+      setStaffLoading(false)
+    }
+  }
+
+  const ROLE_LABELS: Record<string, string> = {
+    admin: 'Администратор',
+    operator: 'Оператор',
+  }
+
   return (
     <div>
       <PageHeader
@@ -172,6 +200,12 @@ export default function Tenants() {
                         </button>
                         <button className="btn-ghost py-1 px-2 text-xs" onClick={() => toggleActive(t)}>
                           {t.is_active ? 'Отключить' : 'Включить'}
+                        </button>
+                        <button
+                          className="btn-ghost py-1 px-2 text-xs text-gray-600"
+                          onClick={() => openStaffModal(t)}
+                        >
+                          Сотрудники
                         </button>
                         <button
                           className="btn-ghost py-1 px-2 text-xs text-brand-600"
@@ -243,7 +277,43 @@ export default function Tenants() {
         </Modal>
       )}
 
-      {/* Create First Admin Modal */}
+      {/* Staff List Modal */}
+      {staffModalTenant && (
+        <Modal
+          title={`Сотрудники «${staffModalTenant.name}»`}
+          onClose={() => setStaffModalTenant(null)}
+        >
+          {staffLoading ? (
+            <p className="text-sm text-gray-500 py-4 text-center">Загрузка...</p>
+          ) : staffList.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">Нет сотрудников. Создайте администратора.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">Логин</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">Роль</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {staffList.map((s) => (
+                  <tr key={s.id}>
+                    <td className="py-2 px-3 font-medium text-gray-800">{s.username}</td>
+                    <td className="py-2 px-3 text-gray-500">{ROLE_LABELS[s.role] ?? s.role}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <div className="pt-4">
+            <button className="btn-secondary w-full justify-center" onClick={() => setStaffModalTenant(null)}>
+              Закрыть
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Create Admin Modal */}
       {adminModalTenant && (
         <Modal
           title={`Администратор для «${adminModalTenant.name}»`}
@@ -251,7 +321,7 @@ export default function Tenants() {
         >
           <form onSubmit={handleCreateAdmin} className="space-y-4">
             <p className="text-sm text-gray-600">
-              Создайте первого администратора для этого кинорума. Он сможет войти в панель и управлять залами, товарами и сотрудниками.
+              Создайте администратора для этого кинорума. Он сможет войти в панель и управлять залами, товарами и сотрудниками.
             </p>
             <div>
               <label className="label">Логин</label>
@@ -272,6 +342,7 @@ export default function Tenants() {
                 onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
                 placeholder="минимум 6 символов"
                 minLength={6}
+                maxLength={72}
                 required
               />
             </div>
