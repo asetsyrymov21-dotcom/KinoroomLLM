@@ -57,7 +57,36 @@ git reset --hard origin/main
 
 ---
 
-## 3. docker compose / docker-compose не работает на VPS
+## 3. API не стартует — отсутствуют переменные в .env на VPS
+
+**Симптом:**
+API падает при старте или работает с дефолтными небезопасными значениями (слабый SECRET_KEY, дефолтный пароль суперадмина). Подключение к БД может падать с ошибкой аутентификации.
+
+**Причина:**
+При первоначальной настройке VPS `.env` не был синхронизирован с локальным. Отсутствовали переменные: `POSTGRES_PASSWORD`, `SECRET_KEY`, `SUPERADMIN_USERNAME`, `SUPERADMIN_PASSWORD`. PostgreSQL при этом работал со старым паролем, не совпадающим с `DATABASE_URL`.
+
+**Решение:**
+1. Обновить `/opt/kinoroom/.env` на VPS (вставить актуальные значения из локального `.env`):
+```bash
+cat > /opt/kinoroom/.env << 'EOF'
+POSTGRES_PASSWORD=...
+DATABASE_URL=postgresql+asyncpg://postgres:...@db:5432/kinorum
+SECRET_KEY=...
+SUPERADMIN_USERNAME=...
+SUPERADMIN_PASSWORD=...
+EOF
+```
+2. Сбросить пароль PostgreSQL чтобы совпадал с `POSTGRES_PASSWORD`:
+```bash
+docker exec -it kinoroom-db-1 psql -U postgres -c "ALTER USER postgres WITH PASSWORD '...';"
+```
+3. Задеплоить **локально** через `./deploy.ps1 "..."` — не на VPS.
+
+**Важно:** `deploy.ps1` — это Windows/PowerShell-скрипт. На VPS он не работает (`-bash: Permission denied`). Запускать только на локальной машине.
+
+---
+
+## 4. docker compose / docker-compose не работает на VPS
 
 **Симптом:**
 `docker compose` или `docker-compose` возвращает ошибку или не найден.
