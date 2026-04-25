@@ -75,9 +75,13 @@ class BookingService:
             is_open_ended=data.is_open_ended,
             discount_pct=discount_pct,
         )
-        # Перезагружаем с user чтобы BookingRead мог сериализовать relation
-        # без lazy-load в async-контексте (MissingGreenlet → 500)
-        return await self.repo.get_with_user(booking.id)
+        # После create() объект попадает в identity map без загруженных relations.
+        # selectinload в get_with_user пропускает второй запрос для объектов из кэша.
+        # expunge() удаляет объект из identity map — get_with_user создаст свежий
+        # инстанс с корректно загруженным user (без MissingGreenlet → 500).
+        booking_id = booking.id
+        self.session.expunge(booking)
+        return await self.repo.get_with_user(booking_id)
 
     async def get_or_404(self, booking_id: int) -> Booking:
         booking = await self.repo.get_with_user(booking_id)
