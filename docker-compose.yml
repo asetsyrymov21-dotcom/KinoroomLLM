@@ -47,6 +47,7 @@ services:
       - ./frontend:/usr/share/nginx/html
       - ./operator.html:/usr/share/nginx/html/operator.html
       - ./setup.html:/usr/share/nginx/html/setup.html
+      - ./admin-dist:/usr/share/nginx/admin
     depends_on:
       - api
 
