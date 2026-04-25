@@ -37,6 +37,13 @@ grep -rn "apiFetch\|fetch(" frontend/ operator.html admin-frontend/src/
 
 Не закрывай задачу пока фронт не обновлён вместе с бэком.
 
+**Важно:** `admin-frontend/` — это исходники React. На сервере работает `admin-dist/` (скомпилированная статика).
+После любых изменений в `admin-frontend/src/` нужно пересобрать:
+```bash
+cd admin-frontend && npm run build
+```
+Без пересборки изменения в исходниках не попадут на сервер.
+
 ---
 
 ## Стиль решений
