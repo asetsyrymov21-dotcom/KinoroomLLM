@@ -196,9 +196,35 @@ docker compose restart nginx
 
 **Логи деплоя:** GitHub → репо → вкладка Actions
 
-**Логи API на VPS:**
+### Имена контейнеров на VPS (актуально)
+
+| Контейнер | Имя | Порт |
+|-----------|-----|------|
+| API (FastAPI) | `kinoroom-api-1` | — (внутренний) |
+| Nginx | `kinoroom-nginx-1` | `0.0.0.0:8001→80` |
+| PostgreSQL | `kinoroom-db-1` | `127.0.0.1:5433→5432` |
+
+> ⚠️ На VPS **нет** `docker compose` (plugin) и `docker-compose` (standalone).
+> Управление контейнерами — только через `docker logs`, `docker ps`, `docker restart` и т.д.
+
+**Логи API (правильная команда):**
 ```bash
-ssh root@178.104.156.114 "cd /opt/kinoroom && docker compose logs -f api"
+docker logs kinoroom-api-1 --tail=100
+```
+
+**Логи в реальном времени:**
+```bash
+docker logs -f kinoroom-api-1
+```
+
+**Перезапустить API:**
+```bash
+docker restart kinoroom-api-1
+```
+
+**Зайти внутрь контейнера:**
+```bash
+docker exec -it kinoroom-api-1 bash
 ```
 
 ---

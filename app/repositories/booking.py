@@ -21,6 +21,7 @@ class BookingRepository(TenantScopedRepository[Booking]):
                 Booking.id == id,
                 Booking.tenant_id == self.tenant_id,
             )
+            .execution_options(populate_existing=True)
         )
         return result.scalar_one_or_none()
 
