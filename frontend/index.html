@@ -836,9 +836,9 @@
 
         // Load halls, products, categories and loyalty status in parallel
         const [halls, products, categories, loyaltyStatus] = await Promise.all([
-          apiFetch('/api/v1/halls/?active_only=true'),
-          apiFetch('/api/v1/products/?active_only=true'),
-          apiFetch('/api/v1/categories/?active_only=true').catch(() => []),
+          apiFetch('/api/v1/halls?active_only=true'),
+          apiFetch('/api/v1/products?active_only=true'),
+          apiFetch('/api/v1/categories?active_only=true').catch(() => []),
           apiFetch(`/api/v1/loyalty/users/${user.id}`).catch(() => null),
         ]);
         state.halls = halls;
