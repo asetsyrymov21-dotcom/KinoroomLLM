@@ -1631,8 +1631,8 @@
   async function loadMeta() {
     try {
       const [prods, hls] = await Promise.all([
-        apiFetch('/api/v1/products/'),
-        apiFetch('/api/v1/halls/'),
+        apiFetch('/api/v1/products'),
+        apiFetch('/api/v1/halls'),
       ]);
       prods.forEach(p => { products[p.id] = p; });
       hls.forEach(h => { halls[h.id] = h; });
@@ -2229,7 +2229,7 @@
     await loadMeta();
 
     // Populate category dropdown in "new product" form (hierarchical)
-    const catsForForm = await apiFetch('/api/v1/categories/').catch(() => []);
+    const catsForForm = await apiFetch('/api/v1/categories').catch(() => []);
     allCategories = catsForForm;
     const prodCatSel = document.getElementById('prodCategory');
     const rootsForDrop = catsForForm.filter(c => !c.parent_id).sort((a, b) => a.position - b.position);
@@ -2242,7 +2242,7 @@
     prodCatSel.innerHTML = catOptions;
 
     // Halls list
-    const hallsArr = await apiFetch('/api/v1/halls/').catch(() => []);
+    const hallsArr = await apiFetch('/api/v1/halls').catch(() => []);
     const hallsBadge = document.getElementById('hallsCountBadge');
     if (hallsBadge) hallsBadge.textContent = hallsArr.length;
     const hallsListEl = document.getElementById('hallsList');
@@ -2294,7 +2294,7 @@
     if (!name || !price_per_hour) { showToast('Введите название и цену', 'error'); return; }
 
     try {
-      await apiFetch('/api/v1/halls/', {
+      await apiFetch('/api/v1/halls', {
         method: 'POST',
         body: JSON.stringify({ name, price_per_hour, capacity, description, is_active }),
       });
@@ -2374,7 +2374,7 @@
     if (!name || !price) { showToast('Введите название и цену', 'error'); return; }
 
     try {
-      await apiFetch('/api/v1/products/', {
+      await apiFetch('/api/v1/products', {
         method: 'POST',
         body: JSON.stringify({ name, price, cost_price, unit, sku, category_id, is_active }),
       });
@@ -2405,7 +2405,7 @@
     try {
       const p = await apiFetch(`/api/v1/products/${id}`);
       // Populate categories dropdown (hierarchical)
-      const cats = allCategories.length ? allCategories : await apiFetch('/api/v1/categories/').catch(() => []);
+      const cats = allCategories.length ? allCategories : await apiFetch('/api/v1/categories').catch(() => []);
       const catSel = document.getElementById('editProdCategory');
       const editRoots = cats.filter(c => !c.parent_id).sort((a, b) => a.position - b.position);
       let editCatOpts = '<option value="">— Без категории —</option>';
@@ -2469,7 +2469,7 @@
   async function loadMenuTab() {
     await loadMeta();
     const [cats, prods] = await Promise.all([
-      apiFetch('/api/v1/categories/').catch(() => []),
+      apiFetch('/api/v1/categories').catch(() => []),
       apiFetch('/api/v1/products/?active_only=false').catch(() => []),
     ]);
     allCategories = cats;
@@ -2599,7 +2599,7 @@
     const parent_id = Number(document.getElementById('catParent').value) || null;
     if (!name) { showToast('Введите название', 'error'); return; }
     try {
-      await apiFetch('/api/v1/categories/', { method: 'POST', body: JSON.stringify({ name, emoji, position, is_active, parent_id }) });
+      await apiFetch('/api/v1/categories', { method: 'POST', body: JSON.stringify({ name, emoji, position, is_active, parent_id }) });
       showToast(`Категория "${name}" создана`, 'success');
       document.getElementById('catName').value = '';
       document.getElementById('catEmoji').value = '';
@@ -3265,7 +3265,7 @@
     const el = document.getElementById('staffList');
     el.innerHTML = '<div class="loading" style="padding:30px">Загрузка...</div>';
     try {
-      const list = await apiFetch('/api/v1/staff/');
+      const list = await apiFetch('/api/v1/staff');
       document.getElementById('staffCount').textContent = list.length;
       if (list.length === 0) {
         el.innerHTML = '<div style="padding:30px;color:var(--text-muted);font-size:13px">Нет сотрудников</div>';
@@ -3311,7 +3311,7 @@
     const role = document.getElementById('newStaffRole').value;
     if (!username || !password) { showToast('Заполните логин и пароль', 'error'); return; }
     try {
-      await apiFetch('/api/v1/staff/', {
+      await apiFetch('/api/v1/staff', {
         method: 'POST',
         body: JSON.stringify({ username, password, role }),
       });

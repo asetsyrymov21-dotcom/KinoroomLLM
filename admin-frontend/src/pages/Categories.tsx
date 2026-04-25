@@ -4,8 +4,17 @@ import type { Category } from '../lib/api'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 
-interface CatForm { name: string; emoji: string; position: string; is_active: boolean }
-const emptyForm = (): CatForm => ({ name: '', emoji: '', position: '0', is_active: true })
+interface CatForm {
+  name: string
+  emoji: string
+  position: string
+  is_active: boolean
+  parent_id: string  // '' = нет родителя
+}
+
+const emptyForm = (): CatForm => ({
+  name: '', emoji: '', position: '0', is_active: true, parent_id: ''
+})
 
 export default function Categories() {
   const [cats, setCats] = useState<Category[]>([])
@@ -31,15 +40,28 @@ export default function Categories() {
   function openCreate() {
     setEditCat(null); setForm(emptyForm()); setFormError(''); setShowModal(true)
   }
+
   function openEdit(c: Category) {
     setEditCat(c)
-    setForm({ name: c.name, emoji: c.emoji ?? '', position: String(c.position), is_active: c.is_active })
+    setForm({
+      name: c.name,
+      emoji: c.emoji ?? '',
+      position: String(c.position),
+      is_active: c.is_active,
+      parent_id: c.parent_id ? String(c.parent_id) : '',
+    })
     setFormError(''); setShowModal(true)
   }
 
   async function handleSave(e: FormEvent) {
     e.preventDefault(); setSaving(true); setFormError('')
-    const body = { name: form.name, emoji: form.emoji || null, position: Number(form.position), is_active: form.is_active }
+    const body = {
+      name: form.name,
+      emoji: form.emoji || null,
+      position: Number(form.position),
+      is_active: form.is_active,
+      parent_id: form.parent_id ? Number(form.parent_id) : null,
+    }
     try {
       if (editCat) await api.patch(`/categories/${editCat.id}`, body)
       else await api.post('/categories', body)
@@ -55,10 +77,21 @@ export default function Categories() {
     catch (err: any) { alert(err.response?.data?.detail ?? 'Ошибка') }
   }
 
+  // Только корневые категории доступны как родители (без вложенности 3+ уровней)
+  const rootCats = cats.filter(c => c.parent_id === null)
+  const catMap = Object.fromEntries(cats.map(c => [c.id, c]))
+
+  // Сортировка: сначала корневые, потом подкатегории сгруппированно
+  const sorted = [
+    ...rootCats.sort((a, b) => a.position - b.position),
+    ...cats.filter(c => c.parent_id !== null).sort((a, b) => a.position - b.position),
+  ]
+
   return (
     <div>
       <PageHeader title="Категории меню" subtitle="Группировка товаров"
         action={<button className="btn-primary" onClick={openCreate}>+ Новая категория</button>} />
+
       <div className="px-8">
         {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : (
           <div className="card overflow-hidden">
@@ -66,6 +99,7 @@ export default function Categories() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="table-header">Название</th>
+                  <th className="table-header">Родитель</th>
                   <th className="table-header">Эмодзи</th>
                   <th className="table-header">Позиция</th>
                   <th className="table-header">Статус</th>
@@ -73,9 +107,15 @@ export default function Categories() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {cats.map(c => (
+                {sorted.map(c => (
                   <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="table-cell font-medium">{c.name}</td>
+                    <td className="table-cell font-medium">
+                      {c.parent_id && <span className="text-gray-400 mr-1">↳</span>}
+                      {c.name}
+                    </td>
+                    <td className="table-cell text-gray-500 text-sm">
+                      {c.parent_id ? (catMap[c.parent_id]?.name ?? '—') : <span className="text-gray-300">—</span>}
+                    </td>
                     <td className="table-cell text-xl">{c.emoji ?? '—'}</td>
                     <td className="table-cell text-gray-500">{c.position}</td>
                     <td className="table-cell">
@@ -91,7 +131,9 @@ export default function Categories() {
                     </td>
                   </tr>
                 ))}
-                {cats.length === 0 && <tr><td colSpan={5} className="table-cell text-center text-gray-400 py-8">Нет категорий</td></tr>}
+                {cats.length === 0 && (
+                  <tr><td colSpan={6} className="table-cell text-center text-gray-400 py-8">Нет категорий</td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -101,21 +143,54 @@ export default function Categories() {
       {showModal && (
         <Modal title={editCat ? `Изменить: ${editCat.name}` : 'Новая категория'} onClose={() => setShowModal(false)}>
           <form onSubmit={handleSave} className="space-y-4">
-            <div><label className="label">Название</label>
-              <input className="input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className="label">Эмодзи</label>
-                <input className="input text-2xl" value={form.emoji} onChange={e => setForm({...form, emoji: e.target.value})} placeholder="🍿" /></div>
-              <div><label className="label">Позиция</label>
-                <input className="input" type="number" value={form.position} onChange={e => setForm({...form, position: e.target.value})} /></div>
+            <div>
+              <label className="label">Название</label>
+              <input className="input" value={form.name}
+                onChange={e => setForm({...form, name: e.target.value})} required />
             </div>
+
+            <div>
+              <label className="label">
+                Родительская категория <span className="text-gray-400 font-normal">— необязательно</span>
+              </label>
+              <select className="input" value={form.parent_id}
+                onChange={e => setForm({...form, parent_id: e.target.value})}>
+                <option value="">— корневая категория —</option>
+                {rootCats
+                  .filter(c => c.id !== editCat?.id)  // нельзя выбрать себя
+                  .map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.emoji ? `${c.emoji} ` : ''}{c.name}
+                    </option>
+                  ))
+                }
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Эмодзи</label>
+                <input className="input text-2xl" value={form.emoji}
+                  onChange={e => setForm({...form, emoji: e.target.value})} placeholder="🍿" />
+              </div>
+              <div>
+                <label className="label">Позиция</label>
+                <input className="input" type="number" value={form.position}
+                  onChange={e => setForm({...form, position: e.target.value})} />
+              </div>
+            </div>
+
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="cat_active" checked={form.is_active} onChange={e => setForm({...form, is_active: e.target.checked})} className="rounded" />
+              <input type="checkbox" id="cat_active" checked={form.is_active}
+                onChange={e => setForm({...form, is_active: e.target.checked})} className="rounded" />
               <label htmlFor="cat_active" className="text-sm text-gray-700">Категория активна</label>
             </div>
+
             {formError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{formError}</p>}
             <div className="flex gap-3 pt-2">
-              <button type="submit" className="btn-primary flex-1 justify-center" disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</button>
+              <button type="submit" className="btn-primary flex-1 justify-center" disabled={saving}>
+                {saving ? 'Сохранение...' : 'Сохранить'}
+              </button>
               <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Отмена</button>
             </div>
           </form>
