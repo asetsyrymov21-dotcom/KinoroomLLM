@@ -511,6 +511,36 @@
 
 <body>
 
+  <!-- ═══════════════════════════════════ SCREEN: Select Tenant ══ -->
+  <div class="screen" id="screen-tenants">
+    <div class="topbar">
+      <div style="flex:1; min-width:0;">
+        <div class="topbar-title">🎮 Kinoroom</div>
+        <div class="topbar-sub">Выберите локацию</div>
+      </div>
+    </div>
+    <div class="content">
+      <div style="
+        background: linear-gradient(135deg, rgba(108,99,255,0.25) 0%, rgba(108,99,255,0.08) 100%);
+        border: 1px solid rgba(108,99,255,0.35);
+        border-radius: var(--radius);
+        padding: 20px 18px 18px;
+        text-align: center;
+      ">
+        <div style="font-size: 38px; margin-bottom: 8px;">📍</div>
+        <div style="font-size: 18px; font-weight: 800; margin-bottom: 6px;">Где вы хотите провести время?</div>
+        <div style="font-size: 13px; color: var(--hint); line-height: 1.5;">
+          Выберите ближайший Kinoroom
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top: 4px;">Наши локации</div>
+      <div id="tenants-list">
+        <div class="spinner"><div class="spin-icon"></div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════ SCREEN: Loading ══════ -->
   <div class="screen active" id="screen-loading">
     <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
@@ -554,7 +584,7 @@
   <div class="screen" id="screen-halls">
     <div class="topbar">
       <div style="flex:1; min-width:0;">
-        <div class="topbar-title">🎮 Kinoroom</div>
+        <div class="topbar-title">🎮 <span id="topbar-tenant-name">Kinoroom</span></div>
         <div class="topbar-sub" id="user-greeting">Добро пожаловать</div>
       </div>
       <button class="topbar-btn" onclick="showBookings()">Мои брони →</button>
@@ -795,6 +825,7 @@
     let tg = window.Telegram?.WebApp;
     let state = {
       user: null,          // UserRead from API
+      tenant: null,        // TenantRead — выбранный кинорум
       bookedSlots: [],     // [{start_time, end_time}] for selected hall+date
       halls: [],           // HallRead[]
       products: [],        // ProductRead[]
@@ -832,30 +863,74 @@
           body: JSON.stringify({ telegram_id: telegramId, name }),
         });
         state.user = user;
-        document.getElementById('user-greeting').textContent = `Привет, ${user.name.split(' ')[0]}!`;
 
-        // Load halls, products, categories and loyalty status in parallel
-        const [halls, products, categories, loyaltyStatus] = await Promise.all([
-          apiFetch('/api/v1/halls?active_only=true'),
-          apiFetch('/api/v1/products?active_only=true'),
-          apiFetch('/api/v1/categories?active_only=true').catch(() => []),
-          apiFetch(`/api/v1/loyalty/users/${user.id}`).catch(() => null),
-        ]);
-        state.halls = halls;
-        state.products = products;
-        state.categories = categories;
-        state.loyaltyStatus = loyaltyStatus;
-
-        renderHalls();
-
-        // Если телефон не указан — показываем экран запроса
-        if (!user.phone) {
-          showScreen('phone');
+        // Загружаем список кинорумов
+        const tenants = await apiFetch('/api/v1/tenants/public');
+        if (tenants.length === 1) {
+          // Если кинорум один — выбираем автоматически
+          await selectTenant(tenants[0]);
         } else {
-          showScreen('halls');
+          renderTenants(tenants);
+          showScreen('tenants');
         }
       } catch (e) {
         showError('Не удалось подключиться к серверу.\n' + e.message);
+      }
+    }
+
+    async function selectTenant(tenant) {
+      state.tenant = tenant;
+      const tid = tenant.id;
+
+      // Загружаем данные выбранного кинорума
+      const [halls, products, categories, loyaltyStatus] = await Promise.all([
+        apiFetch(`/api/v1/halls?active_only=true&tenant_id=${tid}`),
+        apiFetch(`/api/v1/products?active_only=true&tenant_id=${tid}`),
+        apiFetch(`/api/v1/categories?active_only=true&tenant_id=${tid}`).catch(() => []),
+        apiFetch(`/api/v1/loyalty/users/${state.user.id}`).catch(() => null),
+      ]);
+      state.halls = halls;
+      state.products = products;
+      state.categories = categories;
+      state.loyaltyStatus = loyaltyStatus;
+
+      document.getElementById('user-greeting').textContent = `Привет, ${state.user.name.split(' ')[0]}!`;
+      document.getElementById('topbar-tenant-name').textContent = tenant.name;
+      renderHalls();
+
+      if (!state.user.phone) {
+        showScreen('phone');
+      } else {
+        showScreen('halls');
+      }
+    }
+
+    function renderTenants(tenants) {
+      const el = document.getElementById('tenants-list');
+      if (!tenants.length) {
+        el.innerHTML = `<div class="empty"><div class="empty-icon">🚫</div>Нет доступных локаций</div>`;
+        return;
+      }
+      el.innerHTML = tenants.map(t => `
+        <div class="card" onclick="onTenantClick(${t.id})" style="cursor:pointer;">
+          ${t.logo_url ? `<img src="${esc(t.logo_url)}" alt="${esc(t.name)}" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:12px;">` : ''}
+          <div class="card-title">${esc(t.name)}</div>
+          ${t.address ? `<div style="font-size:13px;color:var(--hint);margin-top:4px;">📍 ${esc(t.address)}</div>` : ''}
+          ${t.phone ? `<div style="font-size:13px;color:var(--hint);margin-top:2px;">📞 ${esc(t.phone)}</div>` : ''}
+          <button class="btn btn-primary" style="margin-top:12px;">Выбрать →</button>
+        </div>
+      `).join('');
+    }
+
+    async function onTenantClick(tenantId) {
+      const tenants = await apiFetch('/api/v1/tenants/public').catch(() => []);
+      const tenant = tenants.find(t => t.id === tenantId);
+      if (!tenant) return;
+      showScreen('loading');
+      try {
+        await selectTenant(tenant);
+      } catch (e) {
+        showError('Не удалось загрузить данные.\n' + e.message);
       }
     }
 
