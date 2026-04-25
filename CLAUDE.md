@@ -24,7 +24,8 @@
 
 ```bash
 # Слэши в конце URL (опасно при redirect_slashes=False)
-grep -rn "/api/v1/\w\+/['\"]" frontend/ operator.html admin-frontend/src/
+# Проверять ОБА варианта: /endpoint/' и /endpoint/?param
+grep -rn "/api/v1/[^'\"]*/" frontend/ operator.html admin-frontend/src/
 
 # Любые вызовы API в HTML/JS/TS
 grep -rn "apiFetch\|fetch(" frontend/ operator.html admin-frontend/src/

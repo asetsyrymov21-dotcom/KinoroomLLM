@@ -1854,8 +1854,8 @@
     try {
       await loadMeta();
       const [pending, active] = await Promise.all([
-        apiFetch('/api/v1/bookings/?status=pending'),
-        apiFetch('/api/v1/bookings/?status=active'),
+        apiFetch('/api/v1/bookings?status=pending'),
+        apiFetch('/api/v1/bookings?status=active'),
       ]);
 
       Object.values(timers).forEach(clearInterval);
@@ -2263,7 +2263,7 @@
           </div>`).join('');
 
     // Products list (all, including inactive)
-    const prodsArr = await apiFetch('/api/v1/products/?active_only=false').catch(() => []);
+    const prodsArr = await apiFetch('/api/v1/products?active_only=false').catch(() => []);
     const prodsBadge = document.getElementById('prodsCountBadge');
     if (prodsBadge) prodsBadge.textContent = prodsArr.length;
     const prodsListEl = document.getElementById('prodsList');
@@ -2470,7 +2470,7 @@
     await loadMeta();
     const [cats, prods] = await Promise.all([
       apiFetch('/api/v1/categories').catch(() => []),
-      apiFetch('/api/v1/products/?active_only=false').catch(() => []),
+      apiFetch('/api/v1/products?active_only=false').catch(() => []),
     ]);
     allCategories = cats;
 
@@ -2664,7 +2664,7 @@
     const sel = document.getElementById('quickProdSelect');
     sel.innerHTML = '<option value="">— Загрузка... —</option>';
     try {
-      const prods = await apiFetch('/api/v1/products/?active_only=false');
+      const prods = await apiFetch('/api/v1/products?active_only=false');
       // Sort: without category first, then others
       prods.sort((a, b) => {
         const aHasCat = a.category_id ? 1 : 0;
@@ -3033,7 +3033,7 @@
     try {
       const [history, bookings] = await Promise.all([
         apiFetch('/api/v1/bookings/history'),
-        apiFetch('/api/v1/bookings/?status=completed'),
+        apiFetch('/api/v1/bookings?status=completed'),
       ]);
       _analyticsHistory = history;
       _analyticsBookings = bookings;
