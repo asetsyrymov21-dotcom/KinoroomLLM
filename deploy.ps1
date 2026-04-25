@@ -13,12 +13,13 @@ function info    { param($t) Write-Host "[deploy] $t" -ForegroundColor Green }
 function warning { param($t) Write-Host "[deploy] $t" -ForegroundColor Yellow }
 function fail    { param($t) Write-Host "[deploy] $t" -ForegroundColor Red; exit 1 }
 
-# ── 1. Чистим index.lock если завис ───────────────────────────
-$lock = ".git\index.lock"
-if (Test-Path $lock) {
-    warning "Удаляю зависший $lock..."
-    Remove-Item $lock -Force
-    info "Удалён."
+# ── 1. Чистим lock-файлы если зависли ────────────────────────
+foreach ($lock in @(".git\index.lock", ".git\HEAD.lock")) {
+    if (Test-Path $lock) {
+        warning "Удаляю зависший $lock..."
+        Remove-Item $lock -Force
+        info "Удалён."
+    }
 }
 
 # ── 2. git add ────────────────────────────────────────────────
