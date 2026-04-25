@@ -91,7 +91,7 @@ async def get_me(current: Staff = Depends(get_current_staff)):
     return current
 
 
-@router.get("/", response_model=list[StaffRead])
+@router.get("", response_model=list[StaffRead])
 async def list_staff(
     session: AsyncSession = Depends(get_session),
     current: Staff = Depends(require_admin),
@@ -104,7 +104,7 @@ async def list_staff(
     return list(result.scalars().all())
 
 
-@router.post("/", response_model=StaffRead, status_code=201)
+@router.post("", response_model=StaffRead, status_code=201)
 async def create_staff(
     data: StaffCreate,
     session: AsyncSession = Depends(get_session),

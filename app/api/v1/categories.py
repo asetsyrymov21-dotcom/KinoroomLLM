@@ -10,7 +10,7 @@ from app.services.category import CategoryService
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
 
-@router.post("/", response_model=CategoryRead, status_code=201)
+@router.post("", response_model=CategoryRead, status_code=201)
 async def create_category(
     data: CategoryCreate,
     session: AsyncSession = Depends(get_session),
@@ -19,7 +19,7 @@ async def create_category(
     return await CategoryService(session, current.tenant_id).create(data)
 
 
-@router.get("/", response_model=list[CategoryRead])
+@router.get("", response_model=list[CategoryRead])
 async def list_categories(
     active_only: bool = False,
     tenant_id: int = Query(1, description="ID тенанта"),

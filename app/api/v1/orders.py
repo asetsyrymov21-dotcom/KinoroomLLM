@@ -10,7 +10,7 @@ from app.services.order import OrderService
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
-@router.get("/", response_model=list[OrderRead])
+@router.get("", response_model=list[OrderRead])
 async def list_orders(
     session: AsyncSession = Depends(get_session),
     current: Staff = Depends(get_current_staff),
@@ -27,7 +27,7 @@ async def list_orders(
     return list(result.scalars().all())
 
 
-@router.post("/", response_model=OrderRead, status_code=201)
+@router.post("", response_model=OrderRead, status_code=201)
 async def create_order(
     data: OrderCreate,
     tenant_id: int = Query(1, description="ID тенанта"),

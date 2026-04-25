@@ -21,7 +21,7 @@ async def get_by_telegram(
     return user
 
 
-@router.post("/", response_model=UserRead, status_code=201)
+@router.post("", response_model=UserRead, status_code=201)
 async def create_user(
     data: UserCreate,
     session: AsyncSession = Depends(get_session),

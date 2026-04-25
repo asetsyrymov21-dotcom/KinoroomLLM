@@ -54,7 +54,7 @@ class FirstAdminResponse(BaseModel):
 
 # ── Эндпоинты ────────────────────────────────────────────────────
 
-@router.get("/", response_model=list[TenantRead])
+@router.get("", response_model=list[TenantRead])
 async def list_tenants(
     session: AsyncSession = Depends(get_session),
     _: SuperadminContext = Depends(require_superadmin),
@@ -63,7 +63,7 @@ async def list_tenants(
     return list(result.scalars().all())
 
 
-@router.post("/", response_model=TenantRead, status_code=201)
+@router.post("", response_model=TenantRead, status_code=201)
 async def create_tenant(
     data: TenantCreate,
     session: AsyncSession = Depends(get_session),
