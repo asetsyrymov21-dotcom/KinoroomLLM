@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_session
+from app.api.deps import get_session, resolve_tenant_id
 from app.models.staff import Staff
 from app.schemas.hall import HallCreate, HallRead, HallUpdate
 from app.services.auth import get_current_staff
@@ -24,11 +24,10 @@ async def create_hall(
 @router.get("", response_model=list[HallRead])
 async def list_halls(
     active_only: bool = False,
-    tenant_id: int = Query(1, description="ID тенанта (передаётся мини-аппом)"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
-    """Список залов. Для оператора tenant_id берётся из JWT через auth-зависимость
-    на уровне фронта; для мини-аппа передаётся query-параметром (default=1)."""
+    """Список залов. tenant_id берётся из JWT (admin-панель) или query param (мини-апп)."""
     svc = HallService(session, tenant_id)
     return await svc.list_active() if active_only else await svc.list_all()
 
@@ -36,7 +35,7 @@ async def list_halls(
 @router.get("/{hall_id}", response_model=HallRead)
 async def get_hall(
     hall_id: int,
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     svc = HallService(session, tenant_id)

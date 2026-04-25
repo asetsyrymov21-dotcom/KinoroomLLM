@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_session
+from app.api.deps import get_session, resolve_tenant_id
 from app.models.booking import BookingStatus
 from app.models.staff import Staff
 from app.schemas.booking import BookingCreate, BookingRead, ExtraChargeRequest, SessionHistoryRead
@@ -49,7 +49,7 @@ async def create_booking(
 async def get_hall_slots(
     hall_id: int,
     date: str = Query(..., description="Дата в формате YYYY-MM-DD"),
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Занятые временные слоты зала на дату (pending + active брони)."""
@@ -73,7 +73,7 @@ async def sessions_history(
 @router.get("/user/{user_id}", response_model=list[BookingRead])
 async def list_user_bookings(
     user_id: int,
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     svc = BookingService(session, tenant_id)
@@ -85,7 +85,7 @@ async def list_user_bookings(
 @router.get("/{booking_id}", response_model=BookingRead)
 async def get_booking(
     booking_id: int,
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     svc = BookingService(session, tenant_id)

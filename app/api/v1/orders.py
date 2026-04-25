@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_session
+from app.api.deps import get_session, resolve_tenant_id
 from app.models.staff import Staff
 from app.schemas.order import OrderCreate, OrderItemAdd, OrderItemRead, OrderRead
 from app.services.auth import get_current_staff
@@ -30,7 +30,7 @@ async def list_orders(
 @router.post("", response_model=OrderRead, status_code=201)
 async def create_order(
     data: OrderCreate,
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -55,7 +55,7 @@ async def get_order(
 @router.get("/booking/{booking_id}", response_model=list[OrderRead])
 async def list_orders_by_booking(
     booking_id: int,
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Все заказы по брони."""
@@ -78,7 +78,7 @@ async def list_pending_orders(
 async def add_item(
     order_id: int,
     data: OrderItemAdd,
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
