@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_session
+from app.api.deps import get_session, resolve_tenant_id
 from app.models.staff import Staff
 from app.schemas.loyalty import (
     LoyaltyRuleCreate,
@@ -54,7 +54,7 @@ async def delete_rule(
 @router.get("/users/{user_id}", response_model=UserLoyaltyStatus)
 async def get_user_loyalty(
     user_id: int,
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Статус лояльности пользователя: визиты, ближайшая награда, текущая награда."""

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_session
+from app.api.deps import get_session, resolve_tenant_id
 from app.models.staff import Staff
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.services.auth import get_current_staff
@@ -24,7 +24,7 @@ async def create_product(
 @router.get("", response_model=list[ProductRead])
 async def list_products(
     active_only: bool = True,
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     svc = ProductService(session, tenant_id)
@@ -34,7 +34,7 @@ async def list_products(
 @router.get("/{product_id}", response_model=ProductRead)
 async def get_product(
     product_id: int,
-    tenant_id: int = Query(1, description="ID тенанта"),
+    tenant_id: int = Depends(resolve_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     svc = ProductService(session, tenant_id)
