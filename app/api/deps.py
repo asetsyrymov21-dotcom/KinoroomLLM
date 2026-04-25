@@ -1,6 +1,6 @@
 from typing import AsyncGenerator, Optional
 
-from fastapi import Depends, Query
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,12 +23,11 @@ async def resolve_tenant_id(
     credentials: HTTPAuthorizationCredentials | None = Depends(_optional_bearer),
 ) -> int:
     """
-    Определяет tenant_id для публичных/полупубличных GET-эндпоинтов.
-    Приоритет: JWT tenant_id → query param tenant_id → 1 (legacy).
+    Определяет tenant_id для публичных/полупубличных эндпоинтов.
+    Приоритет: JWT tenant_id → query param tenant_id → 400 (нет fallback на 1).
 
     - Админ/оператор: авторизован через JWT, tenant_id берётся оттуда.
     - Мини-апп: без JWT, передаёт tenant_id явно как query param.
-    - Fallback 1: для обратной совместимости.
     """
     if credentials:
         try:
@@ -42,4 +41,9 @@ async def resolve_tenant_id(
                 return int(tid)
         except (JWTError, Exception):
             pass
-    return tenant_id if tenant_id is not None else 1
+    if tenant_id is not None:
+        return tenant_id
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="tenant_id is required",
+    )
