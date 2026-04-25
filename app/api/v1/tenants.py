@@ -40,6 +40,13 @@ class TenantRead(BaseModel):
     is_active: bool
 
 
+class TenantStaffRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    username: str
+    role: str
+
+
 class FirstAdminCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=64)
     password: str = Field(..., min_length=6, max_length=72)
@@ -127,6 +134,22 @@ async def delete_tenant(
         raise HTTPException(status_code=404, detail="Тенант не найден")
     await session.delete(tenant)
     await session.flush()
+
+
+@router.get("/{tenant_id}/staff", response_model=list[TenantStaffRead])
+async def list_tenant_staff(
+    tenant_id: int,
+    session: AsyncSession = Depends(get_session),
+    _: SuperadminContext = Depends(require_superadmin),
+):
+    """Superadmin просматривает сотрудников тенанта."""
+    tenant = await session.get(Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Тенант не найден")
+    result = await session.execute(
+        select(Staff).where(Staff.tenant_id == tenant_id).order_by(Staff.id)
+    )
+    return list(result.scalars().all())
 
 
 @router.post("/{tenant_id}/staff", response_model=FirstAdminResponse, status_code=201)
