@@ -65,7 +65,7 @@ class BookingService:
                 user_id=data.user_id, base_price=base_price, tenant_id=self.tenant_id
             )
 
-        return await self.repo.create(
+        booking = await self.repo.create(
             user_id=data.user_id,
             hall_id=data.hall_id,
             start_time=data.start_time,
@@ -75,6 +75,9 @@ class BookingService:
             is_open_ended=data.is_open_ended,
             discount_pct=discount_pct,
         )
+        # Перезагружаем с user чтобы BookingRead мог сериализовать relation
+        # без lazy-load в async-контексте (MissingGreenlet → 500)
+        return await self.repo.get_with_user(booking.id)
 
     async def get_or_404(self, booking_id: int) -> Booking:
         booking = await self.repo.get_with_user(booking_id)

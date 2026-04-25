@@ -10,6 +10,23 @@ from app.services.order import OrderService
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
+@router.get("/", response_model=list[OrderRead])
+async def list_orders(
+    session: AsyncSession = Depends(get_session),
+    current: Staff = Depends(get_current_staff),
+):
+    """Список всех заказов тенанта (из JWT). Для панели admin/operator."""
+    from app.repositories.order import OrderRepository
+    from sqlalchemy import select
+    from app.models.order import Order
+    result = await session.execute(
+        select(Order)
+        .where(Order.tenant_id == current.tenant_id)
+        .order_by(Order.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
 @router.post("/", response_model=OrderRead, status_code=201)
 async def create_order(
     data: OrderCreate,

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.v1 import halls, products, bookings, stock, orders, users, categories, loyalty, staff
+from app.api.v1 import halls, products, bookings, stock, orders, users, categories, loyalty, staff, tenants
 
 app = FastAPI(
     title="Kinorum API",
@@ -36,6 +36,7 @@ app.include_router(stock.router, prefix="/api/v1")
 app.include_router(orders.router, prefix="/api/v1")
 app.include_router(loyalty.router, prefix="/api/v1")
 app.include_router(staff.router, prefix="/api/v1")
+app.include_router(tenants.router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["Health"])
@@ -56,6 +57,11 @@ if os.path.isfile(_setup_file):
     @app.get("/setup.html", include_in_schema=False)
     async def setup_panel():
         return FileResponse(_setup_file)
+
+# Serve Admin panel (React build output, must come before /app to not conflict)
+_admin_dist = os.path.join(os.path.dirname(__file__), "..", "admin-dist")
+if os.path.isdir(_admin_dist):
+    app.mount("/admin", StaticFiles(directory=_admin_dist, html=True), name="admin")
 
 # Serve Mini App frontend (must be last to not shadow API routes)
 _frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")

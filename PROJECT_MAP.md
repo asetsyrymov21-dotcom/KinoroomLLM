@@ -10,7 +10,7 @@
 | Файл | Что делает |
 |------|-----------|
 | `app/main.py` | Создаёт FastAPI-приложение, подключает все роутеры, CORS, монтирует фронтенд на `/app` |
-| `app/config.py` | Настройки через Pydantic Settings (`DATABASE_URL`, `DB_ECHO`), читает `.env` |
+| `app/config.py` | Настройки через Pydantic Settings (`DATABASE_URL`, `DB_ECHO`, `SECRET_KEY`, `TOKEN_EXPIRE_HOURS`, `SUPERADMIN_USERNAME`, `SUPERADMIN_PASSWORD`), читает `.env` |
 | `app/database.py` | Создаёт async engine, сессию (`AsyncSession`), базовый класс `Base` для моделей; функция `get_db` |
 | `app/api/deps.py` | `get_session` — зависимость для инъекции сессии в роутеры |
 
@@ -30,6 +30,8 @@
 | `app/api/v1/stock.py` | `/stock` | Stock | `POST /receive`, `GET /halls/{hall_id}/inventory`, `GET /movements` |
 | `app/api/v1/orders.py` | `/orders` | Orders | `POST /`, `GET /{id}`, `POST /{id}/items`, `POST /{id}/complete`, `POST /{id}/cancel` |
 | `app/api/v1/loyalty.py` | `/loyalty` | Loyalty | `POST /rules`, `GET /rules`, `PATCH /rules/{id}`, `DELETE /rules/{id}`, `GET /users/{user_id}` |
+| `app/api/v1/staff.py` | `/staff` | Staff | `POST /login`, `GET /me`, `GET /`, `POST /`, `PATCH /{id}`, `DELETE /{id}`, `POST /setup` |
+| `app/api/v1/tenants.py` | `/tenants` | Tenants (superadmin) | `GET /`, `POST /`, `GET /{id}`, `PATCH /{id}`, `DELETE /{id}`, `POST /{id}/staff` |
 
 ---
 
@@ -119,9 +121,25 @@
 | Файл | Что делает |
 |------|-----------|
 | `frontend/index.html` | Telegram Mini App — интерфейс для пользователя (бронирование зала) |
-| `operator.html` | Интерфейс оператора — управление бронями, заказами, складом |
+| `operator.html` | Интерфейс оператора (legacy) — управление бронями, заказами, складом |
+| `admin-frontend/` | Исходники React+Vite+Tailwind панели управления |
+| `admin-dist/` | Собранная статика панели (генерируется командой `npm run build`, коммитится в git) |
 
-Фронтенд раздаётся FastAPI на пути `/app` (StaticFiles).
+**Пути:**
+- Mini App: `/app` (из `frontend/`)
+- Панель управления: `/admin` (из `admin-dist/`)
+
+**Сборка фронтенда (один раз локально):**
+```bash
+cd admin-frontend && npm install && npm run build
+```
+
+**Роли в панели `/admin`:**
+| Роль | Откуда | Доступ |
+|------|--------|--------|
+| `superadmin` | env (`SUPERADMIN_USERNAME`, `SUPERADMIN_PASSWORD`) | Управление тенантами (кинорумами), создание первого admin |
+| `admin` | таблица `staff`, role=admin | Залы, товары, категории, сотрудники, брони, заказы, склад |
+| `operator` | таблица `staff`, role=operator | Брони, заказы, склад (без настроек) |
 
 ---
 
@@ -129,12 +147,59 @@
 
 | Файл | Назначение |
 |------|-----------|
-| `.env` | Локальные переменные среды (не в git) |
-| `.env.example` | Пример конфига |
+| `.env` | Локальные переменные среды (не в git). Содержит: `DATABASE_URL`, `SECRET_KEY`, `SUPERADMIN_USERNAME`, `SUPERADMIN_PASSWORD` |
+| `.env.example` | Пример конфига со всеми переменными |
+| `.gitignore` | Исключает `.env`, `__pycache__`, `venv/`, `admin-frontend/node_modules/`, IDE-файлы. `admin-dist/` коммитится. |
 | `requirements.txt` | Python-зависимости: fastapi, uvicorn, sqlalchemy, asyncpg, alembic, pydantic, pydantic-settings |
 | `Dockerfile` | Образ приложения |
 | `docker-compose.yml` | 3 сервиса: `db` (postgres:15), `migrate` (alembic upgrade head), `api` (uvicorn :8001) |
 | `alembic.ini` | Конфиг Alembic |
+| `deploy.sh` | Скрипт деплоя (см. ниже) |
+
+---
+
+## Деплой
+
+**Схема:** `git push origin main` → **GitHub Actions** → SSH на VPS → docker compose.
+
+Файл пайплайна: `.github/workflows/deploy.yml`
+
+Локальный скрипт для коммита и пуша:
+```bash
+./deploy.sh "описание изменений"
+```
+
+Скрипт делает:
+1. Удаляет `.git/index.lock` если завис (частая проблема на Windows)
+2. `git add -A`
+3. `git commit -m "..."` (пропускает если нечего коммитить)
+4. `git push origin main` → GitHub Actions подхватывает автоматически
+
+**Что делает GitHub Actions на VPS:**
+```bash
+cd /opt/kinoroom
+git pull origin main
+docker compose up -d --build --no-recreate db      # БД не пересоздаётся
+docker compose run --rm migrate                     # Alembic migrations
+docker compose up -d --build api nginx              # Пересобирает api и nginx
+docker compose restart nginx
+```
+
+**Секреты GitHub Actions** (Settings → Secrets → Actions):
+| Секрет | Значение |
+|--------|---------|
+| `VPS_HOST` | `178.104.156.114` |
+| `VPS_USER` | `root` |
+| `VPS_SSH_KEY` | приватный SSH-ключ |
+
+**VPS:** `root@178.104.156.114`, проект в `/opt/kinoroom`
+
+**Логи деплоя:** GitHub → репо → вкладка Actions
+
+**Логи API на VPS:**
+```bash
+ssh root@178.104.156.114 "cd /opt/kinoroom && docker compose logs -f api"
+```
 
 ---
 
@@ -143,7 +208,8 @@
 - Приложение запускается на порту **8001**
 - Публичный доступ: **Cloudflare Tunnel** (активный) + ngrok (запасной)
 - Текущий URL Cloudflare: меняется при каждом перезапуске туннеля (`*.trycloudflare.com`)
-- Операторка: `https://<текущий-url>/operator.html`
+- Панель управления: `https://<текущий-url>/admin` (React-SPA, роли: superadmin / admin / operator)
+- Операторка (legacy): `https://<текущий-url>/operator.html`
 - Первичная настройка: `https://<текущий-url>/setup.html`
 - Мини-апп (Telegram Web App): `https://<текущий-url>/app`
 - API: `https://<текущий-url>/api/v1/`
