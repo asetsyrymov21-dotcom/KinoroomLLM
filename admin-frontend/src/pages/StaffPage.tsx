@@ -1,7 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { api } from '../lib/api'
 import type { StaffMember } from '../lib/api'
-import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 
@@ -9,7 +8,6 @@ interface StaffForm { username: string; password: string; role: 'admin' | 'opera
 const emptyForm = (): StaffForm => ({ username: '', password: '', role: 'operator' })
 
 export default function StaffPage() {
-  const { auth } = useAuth()
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -51,7 +49,6 @@ export default function StaffPage() {
   }
 
   async function deleteStaff(s: StaffMember) {
-    if (s.id === auth?.tenant_id) { alert('Нельзя удалить себя'); return }
     if (!confirm(`Удалить сотрудника «${s.username}»?`)) return
     try { await api.delete(`/staff/${s.id}`); await load() }
     catch (err: any) { alert(err.response?.data?.detail ?? 'Ошибка') }
