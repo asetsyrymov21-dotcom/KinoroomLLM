@@ -41,19 +41,11 @@ class FakeStaffSession:
             filters[(table_name, column_name)] = getattr(criterion.right, "value", None)
 
         username = filters.get(("staff", "username"))
-        tenant_slug = filters.get(("tenants", "slug"))
-
         rows = [staff for staff in self._staff if staff.username == username]
-        if tenant_slug is not None:
-            rows = [
-                staff
-                for staff in rows
-                if getattr(staff, "tenant_slug", None) == tenant_slug
-            ]
         return FakeExecuteResult(sorted(rows, key=lambda staff: staff.id)[:2])
 
 
-def make_staff(staff_id: int, tenant_id: int, tenant_slug: str) -> Staff:
+def make_staff(staff_id: int, tenant_id: int) -> Staff:
     staff = Staff(
         id=staff_id,
         tenant_id=tenant_id,
@@ -61,7 +53,6 @@ def make_staff(staff_id: int, tenant_id: int, tenant_slug: str) -> Staff:
         password_hash=PASSWORD_HASH,
         role=StaffRole.admin,
     )
-    staff.tenant_slug = tenant_slug
     return staff
 
 
@@ -78,11 +69,11 @@ def post_login(session: FakeStaffSession, payload: dict) -> tuple[int, dict]:
         app.dependency_overrides.clear()
 
 
-def test_login_requires_tenant_slug_when_username_matches_multiple_tenants() -> None:
+def test_login_rejects_username_that_matches_multiple_tenants() -> None:
     session = FakeStaffSession(
         [
-            make_staff(staff_id=1, tenant_id=10, tenant_slug="alpha"),
-            make_staff(staff_id=2, tenant_id=20, tenant_slug="beta"),
+            make_staff(staff_id=1, tenant_id=10),
+            make_staff(staff_id=2, tenant_id=20),
         ]
     )
 
@@ -92,20 +83,17 @@ def test_login_requires_tenant_slug_when_username_matches_multiple_tenants() -> 
     )
 
     assert status_code == 400
-    assert body == {"detail": "Укажите tenant_slug для входа"}
+    assert body == {
+        "detail": "Логин найден в нескольких организациях. Создайте уникальные логины для сотрудников."
+    }
 
 
-def test_login_uses_tenant_slug_to_select_matching_staff() -> None:
-    session = FakeStaffSession(
-        [
-            make_staff(staff_id=1, tenant_id=10, tenant_slug="alpha"),
-            make_staff(staff_id=2, tenant_id=20, tenant_slug="beta"),
-        ]
-    )
+def test_login_accepts_unique_username() -> None:
+    session = FakeStaffSession([make_staff(staff_id=2, tenant_id=20)])
 
     status_code, body = post_login(
         session,
-        {"username": "admin", "password": PASSWORD, "tenant_slug": "beta"},
+        {"username": "admin", "password": PASSWORD},
     )
 
     assert status_code == 200
