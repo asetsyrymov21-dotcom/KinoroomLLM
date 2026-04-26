@@ -1099,7 +1099,7 @@
 
     async function loadHallSlots() {
       if (!state.selectedHall || !state.selectedDate) return;
-      const dateStr = state.selectedDate.toISOString().slice(0, 10);
+      const dateStr = localDateStr(state.selectedDate);
       try {
         state.bookedSlots = await apiFetch(
           `/api/v1/bookings/halls/${state.selectedHall.id}/slots?date=${dateStr}&tenant_id=${state.tenant?.id}`
@@ -1155,8 +1155,8 @@
       for (let i = 0; i < 14; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
-        const iso = d.toISOString().slice(0, 10);
-        const selected = iso === (state.selectedDate?.toISOString().slice(0, 10) ?? iso);
+        const iso = localDateStr(d);
+        const selected = iso === (state.selectedDate ? localDateStr(state.selectedDate) : iso);
         html += `
       <div class="date-chip ${selected ? 'selected' : ''}" onclick="selectDate('${iso}', this)">
         <span class="day-name">${dayNames[d.getDay()]}</span>
@@ -1915,6 +1915,11 @@
 
     function fmtT(date) {
       return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    // Локальная дата в формате YYYY-MM-DD (без конвертации в UTC)
+    function localDateStr(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
     function statusLabel(status) {
