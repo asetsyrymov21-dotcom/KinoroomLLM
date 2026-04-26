@@ -23,6 +23,7 @@ router = APIRouter(prefix="/staff", tags=["Staff"])
 class LoginRequest(BaseModel):
     username: str
     password: str = Field(..., max_length=72)
+    tenant_slug: str | None = Field(None, max_length=100)
 
 
 class LoginResponse(BaseModel):
@@ -74,8 +75,16 @@ async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)
             tenant_id=None,
         )
 
-    result = await session.execute(select(Staff).where(Staff.username == data.username))
-    staff = result.scalar_one_or_none()
+    query = select(Staff).where(Staff.username == data.username)
+    if data.tenant_slug:
+        query = query.join(Tenant, Tenant.id == Staff.tenant_id).where(Tenant.slug == data.tenant_slug)
+
+    result = await session.execute(query.order_by(Staff.id).limit(2))
+    matches = list(result.scalars().all())
+    if len(matches) > 1:
+        raise HTTPException(status_code=400, detail="Укажите tenant_slug для входа")
+
+    staff = matches[0] if matches else None
     if not staff or not verify_password(data.password, staff.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль")
     return LoginResponse(
