@@ -34,7 +34,7 @@ export default function Layout() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">🎬</span>
             <div>
-              <p className="font-semibold text-gray-900 text-sm leading-tight">Kinorum</p>
+              <p className="font-semibold text-gray-900 text-sm leading-tight">KinoRoom</p>
               <p className="text-xs text-gray-400 capitalize">{role}</p>
             </div>
           </div>
