@@ -9,7 +9,6 @@ export default function Login() {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [tenantSlug, setTenantSlug] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -18,10 +17,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      const body = tenantSlug.trim()
-        ? { username, password, tenant_slug: tenantSlug.trim() }
-        : { username, password }
-      const { data } = await api.post<AuthInfo>('/staff/login', body)
+      const { data } = await api.post<AuthInfo>('/staff/login', { username, password })
       setAuth(data)
       // Перенаправить на первую доступную страницу
       if (data.role === 'superadmin') {
@@ -59,16 +55,6 @@ export default function Login() {
                 placeholder="username"
                 required
                 autoFocus
-              />
-            </div>
-            <div>
-              <label className="label">Организация</label>
-              <input
-                className="input"
-                type="text"
-                value={tenantSlug}
-                onChange={(e) => setTenantSlug(e.target.value)}
-                placeholder="slug"
               />
             </div>
             <div>
