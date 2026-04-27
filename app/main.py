@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.v1 import halls, products, bookings, stock, orders, users, categories, loyalty, staff, tenants
 
 app = FastAPI(
-    title="Kinorum API",
+    title="KinoRoom API",
     redirect_slashes=False,
     description=(
         "Backend для управления залами, бронированием и складом.\n\n"

@@ -40,8 +40,39 @@ export default function Orders() {
     <div>
       <PageHeader title="Заказы" subtitle="Заказы товаров в рамках бронирований" />
       <div className="px-8">
-        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : (
-          <div className="card overflow-hidden">
+        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : orders.length === 0 ? (
+          <div className="card px-4 py-8 text-center text-sm text-gray-400">Нет заказов</div>
+        ) : (
+          <>
+          <div className="mobile-records">
+            {orders.map(o => (
+              <div key={o.id} className="card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-gray-900">Заказ #{o.id}</p>
+                    <p className="mt-1 text-sm text-gray-500">Бронь #{o.booking_id}</p>
+                  </div>
+                  <span className={`badge shrink-0 ${STATUS_COLORS[o.status] ?? 'bg-gray-100 text-gray-500'}`}>
+                    {STATUS_LABELS[o.status] ?? o.status}
+                  </span>
+                </div>
+                <div className="mt-4 rounded-lg bg-gray-50 px-3 py-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Сумма</p>
+                  <p className="mt-1 text-base font-semibold text-gray-900">
+                    {o.total != null ? `${Number(o.total).toLocaleString()} ₸` : '—'}
+                  </p>
+                </div>
+                {o.status === 'open' && (
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button className="btn-secondary justify-center py-2 text-xs text-blue-600" disabled={actioning === o.id} onClick={() => action(o.id, 'complete')}>Выполнить</button>
+                    <button className="btn-ghost justify-center py-2 text-xs text-red-500" disabled={actioning === o.id} onClick={() => action(o.id, 'cancel')}>Отменить</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="card desktop-table">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -73,10 +104,10 @@ export default function Orders() {
                     </td>
                   </tr>
                 ))}
-                {orders.length === 0 && <tr><td colSpan={5} className="table-cell text-center text-gray-400 py-8">Нет заказов</td></tr>}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>
