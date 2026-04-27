@@ -1905,7 +1905,7 @@
       event?.stopPropagation();
       if (!confirm('Отменить бронь?')) return;
       try {
-        await apiFetch(`/api/v1/bookings/${bookingId}/cancel`, { method: 'POST' });
+        await apiFetch(`/api/v1/bookings/${bookingId}/cancel-by-user?tenant_id=${state.tenant?.id}&user_id=${state.user?.id}`, { method: 'POST' });
         tg?.HapticFeedback?.notificationOccurred('success');
         await loadBookings();
       } catch (e) {

@@ -137,6 +137,18 @@ async def add_extra_charge(
     return await svc.add_extra_charge(booking_id, data.amount)
 
 
+@router.post("/{booking_id}/cancel-by-user", response_model=BookingRead)
+async def cancel_booking_by_user(
+    booking_id: int,
+    user_id: int = Query(..., description="ID пользователя miniapp"),
+    tenant_id: int = Depends(resolve_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    """Отменить свою бронь из miniapp."""
+    svc = BookingService(session, tenant_id)
+    return await svc.cancel_by_user(booking_id, user_id)
+
+
 @router.post("/{booking_id}/cancel", response_model=BookingRead)
 async def cancel_booking(
     booking_id: int,
