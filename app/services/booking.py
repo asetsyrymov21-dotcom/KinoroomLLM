@@ -152,6 +152,15 @@ class BookingService:
         booking.status = BookingStatus.cancelled
         return booking
 
+    async def cancel_by_user(self, booking_id: int, user_id: int) -> Booking:
+        booking = await self.get_or_404(booking_id)
+        if booking.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot cancel another user's booking",
+            )
+        return await self.cancel(booking_id)
+
     async def get_slots(self, hall_id: int, date_str: str) -> list[dict]:
         """Занятые временные интервалы зала на дату (для фронтенда)."""
         bookings = await self.repo.get_slots_for_date(hall_id, date_str)
