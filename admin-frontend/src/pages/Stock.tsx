@@ -5,11 +5,13 @@ import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 
 interface ReceiveForm { hall_id: string; product_id: string; quantity: string; note: string }
+type InventoryRow = StockBalance & { hall_name: string }
+type ProductInventory = Omit<StockBalance, 'hall_id'> & { hall_ids: number[] }
 
 export default function Stock() {
   const [halls, setHalls] = useState<Hall[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [inventory, setInventory] = useState<(StockBalance & { hall_name: string })[]>([])
+  const [inventory, setInventory] = useState<InventoryRow[]>([])
   const [loading, setLoading] = useState(false)
   const [showReceive, setShowReceive] = useState(false)
   const [receiveForm, setReceiveForm] = useState<ReceiveForm>({ hall_id: '', product_id: '', quantity: '', note: '' })
@@ -53,14 +55,35 @@ export default function Stock() {
     .filter(p => p.is_active)
     .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
 
-  const visibleInventory = inventory
+  const productInventory = Array.from(
+    inventory.reduce((map, item) => {
+      const current = map.get(item.product_id)
+      if (current) {
+        current.quantity += Number(item.quantity)
+        current.reserved_quantity += Number(item.reserved_quantity)
+        current.hall_ids.push(item.hall_id)
+      } else {
+        map.set(item.product_id, {
+          product_id: item.product_id,
+          product_name: item.product_name,
+          quantity: Number(item.quantity),
+          reserved_quantity: Number(item.reserved_quantity),
+          unit: item.unit,
+          hall_ids: [item.hall_id],
+        })
+      }
+      return map
+    }, new Map<number, ProductInventory>()).values()
+  )
+
+  const visibleInventory = productInventory
     .filter(item => item.product_name.toLowerCase().includes(search.trim().toLowerCase()))
     .sort((a, b) => {
       if (sortBy === 'quantity') return Number(b.quantity) - Number(a.quantity) || a.product_name.localeCompare(b.product_name, 'ru')
       if (sortBy === 'available') {
         return Number(b.quantity - b.reserved_quantity) - Number(a.quantity - a.reserved_quantity) || a.product_name.localeCompare(b.product_name, 'ru')
       }
-      return a.product_name.localeCompare(b.product_name, 'ru') || a.hall_name.localeCompare(b.hall_name, 'ru')
+      return a.product_name.localeCompare(b.product_name, 'ru')
     })
 
   async function handleReceive(e: FormEvent) {
@@ -104,7 +127,7 @@ export default function Stock() {
             {visibleInventory.map(item => {
               const available = item.quantity - item.reserved_quantity
               return (
-                <div key={`${item.hall_id}-${item.product_id}`} className="card p-4">
+                <div key={item.product_id} className="card p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-semibold text-gray-900 leading-5">{item.product_name}</p>
@@ -141,7 +164,7 @@ export default function Stock() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {visibleInventory.map(item => (
-                  <tr key={`${item.hall_id}-${item.product_id}`} className="hover:bg-gray-50">
+                  <tr key={item.product_id} className="hover:bg-gray-50">
                     <td className="table-cell font-medium">{item.product_name}</td>
                     <td className="table-cell">{item.quantity}</td>
                     <td className="table-cell text-orange-600">{item.reserved_quantity}</td>
