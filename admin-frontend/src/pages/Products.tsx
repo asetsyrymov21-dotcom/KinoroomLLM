@@ -69,8 +69,33 @@ export default function Products() {
       <PageHeader title="Товары" subtitle="Меню и позиции для заказов"
         action={<button className="btn-primary" onClick={openCreate}>+ Новый товар</button>} />
       <div className="px-8">
-        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : (
-          <div className="card overflow-hidden">
+        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : products.length === 0 ? (
+          <div className="card px-4 py-8 text-center text-sm text-gray-400">Нет товаров</div>
+        ) : (
+          <>
+          <div className="mobile-records">
+            {products.map(p => (
+              <div key={p.id} className="card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 leading-5">{p.name}</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {p.category_id ? (catMap[p.category_id]?.name ?? 'Без категории') : 'Без категории'}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-sm font-semibold text-gray-900">
+                    {Number(p.price).toLocaleString()} ₸
+                  </p>
+                </div>
+                {p.sku && <p className="mt-3 text-xs font-mono text-gray-400">{p.sku}</p>}
+                <div className="mt-4">
+                  <button className="btn-secondary w-full justify-center py-2 text-xs" onClick={() => openEdit(p)}>Изменить</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="card desktop-table">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -93,10 +118,10 @@ export default function Products() {
                     </td>
                   </tr>
                 ))}
-                {products.length === 0 && <tr><td colSpan={5} className="table-cell text-center text-gray-400 py-8">Нет товаров</td></tr>}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

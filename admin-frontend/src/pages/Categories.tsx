@@ -90,8 +90,30 @@ export default function Categories() {
         action={<button className="btn-primary" onClick={openCreate}>+ Новая категория</button>} />
 
       <div className="px-8">
-        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : (
-          <div className="card overflow-hidden">
+        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : cats.length === 0 ? (
+          <div className="card px-4 py-8 text-center text-sm text-gray-400">Нет категорий</div>
+        ) : (
+          <>
+          <div className="mobile-records">
+            {sorted.map(c => (
+              <div key={c.id} className="card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 leading-5">{c.name}</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {c.parent_id ? `Родитель: ${catMap[c.parent_id]?.name ?? '—'}` : 'Корневая категория'}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button className="btn-secondary justify-center py-2 text-xs" onClick={() => openEdit(c)}>Изменить</button>
+                  <button className="btn-ghost justify-center py-2 text-xs text-red-500" onClick={() => deleteCat(c)}>Удалить</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="card desktop-table">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -118,12 +140,10 @@ export default function Categories() {
                     </td>
                   </tr>
                 ))}
-                {cats.length === 0 && (
-                  <tr><td colSpan={3} className="table-cell text-center text-gray-400 py-8">Нет категорий</td></tr>
-                )}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

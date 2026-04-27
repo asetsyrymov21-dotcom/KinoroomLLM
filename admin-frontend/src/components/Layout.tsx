@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 interface NavItem {
   to: string
   label: string
+  mobileLabel?: string
   icon: string
   roles: string[]
 }
@@ -11,12 +12,12 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/tenants',    label: 'Кинорумы',      icon: '🏢', roles: ['superadmin'] },
   { to: '/halls',      label: 'Залы',           icon: '🎬', roles: ['admin'] },
-  { to: '/categories', label: 'Категории',      icon: '🗂️', roles: ['admin'] },
+  { to: '/categories', label: 'Категории',      mobileLabel: 'Катег.', icon: '🗂️', roles: ['admin'] },
   { to: '/products',   label: 'Товары',         icon: '📦', roles: ['admin'] },
-  { to: '/bookings',   label: 'Бронирования',   icon: '🗓️', roles: ['admin', 'operator'] },
+  { to: '/bookings',   label: 'Бронирования',   mobileLabel: 'Брони', icon: '🗓️', roles: ['admin', 'operator'] },
   { to: '/orders',     label: 'Заказы',         icon: '🧾', roles: ['admin', 'operator'] },
   { to: '/stock',      label: 'Склад',          icon: '📦', roles: ['admin', 'operator'] },
-  { to: '/staff',      label: 'Сотрудники',     icon: '👥', roles: ['admin'] },
+  { to: '/staff',      label: 'Сотрудники',     mobileLabel: 'Сотр.', icon: '👥', roles: ['admin'] },
 ]
 
 export default function Layout() {
@@ -113,7 +114,7 @@ export default function Layout() {
             }
           >
             <span className="text-lg leading-none">{item.icon}</span>
-            <span className="max-w-full truncate">{item.label}</span>
+            <span className="max-w-full truncate">{item.mobileLabel ?? item.label}</span>
           </NavLink>
         ))}
       </nav>
