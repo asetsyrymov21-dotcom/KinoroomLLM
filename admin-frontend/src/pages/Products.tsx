@@ -6,10 +6,10 @@ import Modal from '../components/Modal'
 
 interface ProdForm {
   name: string; sku: string; price: string; cost_price: string
-  unit: string; is_active: boolean; category_id: string
+  is_active: boolean; category_id: string
 }
 const emptyForm = (): ProdForm => ({
-  name: '', sku: '', price: '', cost_price: '', unit: 'шт', is_active: true, category_id: ''
+  name: '', sku: '', price: '', cost_price: '', is_active: true, category_id: ''
 })
 
 export default function Products() {
@@ -41,7 +41,7 @@ export default function Products() {
     setForm({
       name: p.name, sku: p.sku ?? '', price: String(p.price),
       cost_price: p.cost_price != null ? String(p.cost_price) : '',
-      unit: p.unit, is_active: p.is_active, category_id: p.category_id ? String(p.category_id) : ''
+      is_active: p.is_active, category_id: p.category_id ? String(p.category_id) : ''
     })
     setFormError(''); setShowModal(true)
   }
@@ -51,7 +51,7 @@ export default function Products() {
     const body = {
       name: form.name, sku: form.sku.trim() || null, price: Number(form.price),
       cost_price: form.cost_price ? Number(form.cost_price) : null,
-      unit: form.unit, is_active: form.is_active,
+      unit: 'шт', is_active: form.is_active,
       category_id: form.category_id ? Number(form.category_id) : null,
     }
     try {
@@ -78,8 +78,6 @@ export default function Products() {
                   <th className="table-header">SKU</th>
                   <th className="table-header">Категория</th>
                   <th className="table-header">Цена</th>
-                  <th className="table-header">Ед.</th>
-                  <th className="table-header">Статус</th>
                   <th className="table-header">Действия</th>
                 </tr>
               </thead>
@@ -90,18 +88,12 @@ export default function Products() {
                     <td className="table-cell font-mono text-xs text-gray-500">{p.sku}</td>
                     <td className="table-cell text-gray-500">{p.category_id ? (catMap[p.category_id]?.name ?? '—') : '—'}</td>
                     <td className="table-cell">{Number(p.price).toLocaleString()} ₸</td>
-                    <td className="table-cell text-gray-500">{p.unit}</td>
-                    <td className="table-cell">
-                      <span className={`badge ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {p.is_active ? 'Активен' : 'Скрыт'}
-                      </span>
-                    </td>
                     <td className="table-cell">
                       <button className="btn-ghost py-1 px-2 text-xs" onClick={() => openEdit(p)}>Изменить</button>
                     </td>
                   </tr>
                 ))}
-                {products.length === 0 && <tr><td colSpan={7} className="table-cell text-center text-gray-400 py-8">Нет товаров</td></tr>}
+                {products.length === 0 && <tr><td colSpan={5} className="table-cell text-center text-gray-400 py-8">Нет товаров</td></tr>}
               </tbody>
             </table>
           </div>
@@ -117,13 +109,11 @@ export default function Products() {
               <div><label className="label">SKU (артикул) <span className="text-gray-400 font-normal">— необязательно</span></label>
                 <input className="input font-mono" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} placeholder="A-001" /></div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div><label className="label">Цена (₸)</label>
                 <input className="input" type="number" min="0" step="0.01" value={form.price} onChange={e => setForm({...form, price: e.target.value})} required /></div>
               <div><label className="label">Себестоимость</label>
                 <input className="input" type="number" min="0" step="0.01" value={form.cost_price} onChange={e => setForm({...form, cost_price: e.target.value})} /></div>
-              <div><label className="label">Единица</label>
-                <input className="input" value={form.unit} onChange={e => setForm({...form, unit: e.target.value})} placeholder="шт" /></div>
             </div>
             <div><label className="label">Категория</label>
               <select className="input" value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value})}>
