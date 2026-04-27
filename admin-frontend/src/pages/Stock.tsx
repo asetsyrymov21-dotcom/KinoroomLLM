@@ -96,8 +96,40 @@ export default function Stock() {
             <option value="available">По свободному количеству</option>
           </select>
         </div>
-        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : (
-          <div className="card overflow-hidden">
+        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : visibleInventory.length === 0 ? (
+          <div className="card px-4 py-8 text-center text-sm text-gray-400">Склад пуст</div>
+        ) : (
+          <>
+          <div className="mobile-records">
+            {visibleInventory.map(item => {
+              const available = item.quantity - item.reserved_quantity
+              return (
+                <div key={`${item.hall_id}-${item.product_id}`} className="card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 leading-5">{item.product_name}</p>
+                      <p className="mt-1 text-sm text-gray-500">Остаток: {item.quantity}</p>
+                    </div>
+                    <span className={`badge shrink-0 ${available <= 0 ? 'bg-red-50 text-red-600' : 'bg-green-100 text-green-700'}`}>
+                      {available} свободно
+                    </span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">В резерве</p>
+                      <p className="mt-1 font-semibold text-orange-600">{item.reserved_quantity}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Свободно</p>
+                      <p className={`mt-1 font-semibold ${available <= 0 ? 'text-red-600' : 'text-green-700'}`}>{available}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="card desktop-table">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -120,24 +152,16 @@ export default function Stock() {
                     </td>
                   </tr>
                 ))}
-                {visibleInventory.length === 0 && (
-                  <tr><td colSpan={4} className="table-cell text-center text-gray-400 py-8">Склад пуст</td></tr>
-                )}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
       {showReceive && (
         <Modal title="Приход товара" onClose={() => setShowReceive(false)}>
           <form onSubmit={handleReceive} className="space-y-4">
-            <div><label className="label">Зал</label>
-              <select className="input" value={receiveForm.hall_id}
-                onChange={e => setReceiveForm({ ...receiveForm, hall_id: e.target.value })} required>
-                {halls.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-              </select>
-            </div>
             <div><label className="label">Товар</label>
               <select className="input" value={receiveForm.product_id}
                 onChange={e => setReceiveForm({ ...receiveForm, product_id: e.target.value })} required>

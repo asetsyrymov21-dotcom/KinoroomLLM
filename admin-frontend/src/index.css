@@ -43,4 +43,26 @@
   .badge {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
   }
+  .mobile-records {
+    @apply space-y-3;
+  }
+  .desktop-table {
+    @apply hidden overflow-hidden;
+  }
+}
+
+@media (min-width: 1100px) {
+  .mobile-records {
+    display: none;
+  }
+
+  .desktop-table {
+    display: block;
+  }
+}
+
+@media (max-width: 1099px) {
+  .desktop-table {
+    display: none;
+  }
 }
