@@ -16,11 +16,12 @@ async def list_orders(
     current: Staff = Depends(get_current_staff),
 ):
     """Список всех заказов тенанта (из JWT). Для панели admin/operator."""
-    from app.repositories.order import OrderRepository
     from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
     from app.models.order import Order
     result = await session.execute(
         select(Order)
+        .options(selectinload(Order.items))
         .where(Order.tenant_id == current.tenant_id)
         .order_by(Order.created_at.desc())
     )

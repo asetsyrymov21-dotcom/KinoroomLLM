@@ -1,7 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { api } from '../lib/api'
 import type { StaffMember } from '../lib/api'
-import { useAuth } from '../context/AuthContext'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 
@@ -9,7 +8,6 @@ interface StaffForm { username: string; password: string; role: 'admin' | 'opera
 const emptyForm = (): StaffForm => ({ username: '', password: '', role: 'operator' })
 
 export default function StaffPage() {
-  const { auth } = useAuth()
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -51,7 +49,6 @@ export default function StaffPage() {
   }
 
   async function deleteStaff(s: StaffMember) {
-    if (s.id === auth?.tenant_id) { alert('Нельзя удалить себя'); return }
     if (!confirm(`Удалить сотрудника «${s.username}»?`)) return
     try { await api.delete(`/staff/${s.id}`); await load() }
     catch (err: any) { alert(err.response?.data?.detail ?? 'Ошибка') }
@@ -62,8 +59,31 @@ export default function StaffPage() {
       <PageHeader title="Сотрудники" subtitle="Администраторы и операторы"
         action={<button className="btn-primary" onClick={openCreate}>+ Добавить сотрудника</button>} />
       <div className="px-8">
-        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : (
-          <div className="card overflow-hidden">
+        {loading ? <p className="text-gray-500 text-sm">Загрузка...</p> : staff.length === 0 ? (
+          <div className="card px-4 py-8 text-center text-sm text-gray-400">Нет сотрудников</div>
+        ) : (
+          <>
+          <div className="mobile-records">
+            {staff.map(s => (
+              <div key={s.id} className="card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 leading-5">{s.username}</p>
+                    <p className="mt-1 text-sm text-gray-500">Сотрудник админки</p>
+                  </div>
+                  <span className={`badge shrink-0 ${s.role === 'admin' ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-600'}`}>
+                    {s.role === 'admin' ? 'Администратор' : 'Оператор'}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button className="btn-secondary justify-center py-2 text-xs" onClick={() => openEdit(s)}>Изменить</button>
+                  <button className="btn-ghost justify-center py-2 text-xs text-red-500" onClick={() => deleteStaff(s)}>Удалить</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="card desktop-table">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -89,10 +109,10 @@ export default function StaffPage() {
                     </td>
                   </tr>
                 ))}
-                {staff.length === 0 && <tr><td colSpan={3} className="table-cell text-center text-gray-400 py-8">Нет сотрудников</td></tr>}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

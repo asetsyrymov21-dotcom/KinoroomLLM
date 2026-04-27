@@ -74,8 +74,20 @@ async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)
             tenant_id=None,
         )
 
-    result = await session.execute(select(Staff).where(Staff.username == data.username))
-    staff = result.scalar_one_or_none()
+    result = await session.execute(
+        select(Staff)
+        .where(Staff.username == data.username)
+        .order_by(Staff.id)
+        .limit(2)
+    )
+    matches = list(result.scalars().all())
+    if len(matches) > 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Логин найден в нескольких организациях. Создайте уникальные логины для сотрудников.",
+        )
+
+    staff = matches[0] if matches else None
     if not staff or not verify_password(data.password, staff.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль")
     return LoginResponse(
@@ -110,12 +122,7 @@ async def create_staff(
     session: AsyncSession = Depends(get_session),
     current: Staff = Depends(require_admin),
 ):
-    existing = await session.execute(
-        select(Staff).where(
-            Staff.tenant_id == current.tenant_id,
-            Staff.username == data.username,
-        )
-    )
+    existing = await session.execute(select(Staff).where(Staff.username == data.username))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Пользователь с таким именем уже существует")
     staff = Staff(
