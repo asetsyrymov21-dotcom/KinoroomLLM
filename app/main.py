@@ -1,4 +1,8 @@
 import os
+import asyncio
+import contextlib
+import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,9 +10,39 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.v1 import halls, products, bookings, stock, orders, users, categories, loyalty, staff, tenants
+from app.database import AsyncSessionLocal
+from app.services.booking import auto_complete_expired_bookings
+
+logger = logging.getLogger(__name__)
+AUTO_COMPLETE_INTERVAL_SECONDS = int(os.getenv("BOOKING_AUTO_COMPLETE_INTERVAL_SECONDS", "60"))
+
+
+async def auto_complete_bookings_loop() -> None:
+    while True:
+        try:
+            async with AsyncSessionLocal() as session:
+                completed = await auto_complete_expired_bookings(session)
+                await session.commit()
+                if completed:
+                    logger.info("Auto-completed %s expired bookings", completed)
+        except Exception:
+            logger.exception("Failed to auto-complete expired bookings")
+        await asyncio.sleep(AUTO_COMPLETE_INTERVAL_SECONDS)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(auto_complete_bookings_loop())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
 app = FastAPI(
     title="KinoRoom API",
+    lifespan=lifespan,
     redirect_slashes=False,
     description=(
         "Backend для управления залами, бронированием и складом.\n\n"
