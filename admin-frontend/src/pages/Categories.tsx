@@ -6,14 +6,12 @@ import Modal from '../components/Modal'
 
 interface CatForm {
   name: string
-  emoji: string
-  position: string
   is_active: boolean
   parent_id: string  // '' = нет родителя
 }
 
 const emptyForm = (): CatForm => ({
-  name: '', emoji: '', position: '0', is_active: true, parent_id: ''
+  name: '', is_active: true, parent_id: ''
 })
 
 export default function Categories() {
@@ -45,8 +43,6 @@ export default function Categories() {
     setEditCat(c)
     setForm({
       name: c.name,
-      emoji: c.emoji ?? '',
-      position: String(c.position),
       is_active: c.is_active,
       parent_id: c.parent_id ? String(c.parent_id) : '',
     })
@@ -57,8 +53,7 @@ export default function Categories() {
     e.preventDefault(); setSaving(true); setFormError('')
     const body = {
       name: form.name,
-      emoji: form.emoji || null,
-      position: Number(form.position),
+      emoji: null,
       is_active: form.is_active,
       parent_id: form.parent_id ? Number(form.parent_id) : null,
     }
@@ -81,10 +76,12 @@ export default function Categories() {
   const rootCats = cats.filter(c => c.parent_id === null)
   const catMap = Object.fromEntries(cats.map(c => [c.id, c]))
 
-  // Сортировка: сначала корневые, потом подкатегории сгруппированно
+  const byName = (a: Category, b: Category) => a.name.localeCompare(b.name, 'ru')
+
+  // Сортировка: сначала корневые, потом подкатегории, внутри — по алфавиту
   const sorted = [
-    ...rootCats.sort((a, b) => a.position - b.position),
-    ...cats.filter(c => c.parent_id !== null).sort((a, b) => a.position - b.position),
+    ...rootCats.sort(byName),
+    ...cats.filter(c => c.parent_id !== null).sort(byName),
   ]
 
   return (
@@ -100,9 +97,6 @@ export default function Categories() {
                 <tr>
                   <th className="table-header">Название</th>
                   <th className="table-header">Родитель</th>
-                  <th className="table-header">Эмодзи</th>
-                  <th className="table-header">Позиция</th>
-                  <th className="table-header">Статус</th>
                   <th className="table-header">Действия</th>
                 </tr>
               </thead>
@@ -116,13 +110,6 @@ export default function Categories() {
                     <td className="table-cell text-gray-500 text-sm">
                       {c.parent_id ? (catMap[c.parent_id]?.name ?? '—') : <span className="text-gray-300">—</span>}
                     </td>
-                    <td className="table-cell text-xl">{c.emoji ?? '—'}</td>
-                    <td className="table-cell text-gray-500">{c.position}</td>
-                    <td className="table-cell">
-                      <span className={`badge ${c.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {c.is_active ? 'Активна' : 'Скрыта'}
-                      </span>
-                    </td>
                     <td className="table-cell">
                       <div className="flex gap-2">
                         <button className="btn-ghost py-1 px-2 text-xs" onClick={() => openEdit(c)}>Изменить</button>
@@ -132,7 +119,7 @@ export default function Categories() {
                   </tr>
                 ))}
                 {cats.length === 0 && (
-                  <tr><td colSpan={6} className="table-cell text-center text-gray-400 py-8">Нет категорий</td></tr>
+                  <tr><td colSpan={3} className="table-cell text-center text-gray-400 py-8">Нет категорий</td></tr>
                 )}
               </tbody>
             </table>
@@ -160,24 +147,11 @@ export default function Categories() {
                   .filter(c => c.id !== editCat?.id)  // нельзя выбрать себя
                   .map(c => (
                     <option key={c.id} value={c.id}>
-                      {c.emoji ? `${c.emoji} ` : ''}{c.name}
+                      {c.name}
                     </option>
                   ))
                 }
               </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label">Эмодзи</label>
-                <input className="input text-2xl" value={form.emoji}
-                  onChange={e => setForm({...form, emoji: e.target.value})} placeholder="🍿" />
-              </div>
-              <div>
-                <label className="label">Позиция</label>
-                <input className="input" type="number" value={form.position}
-                  onChange={e => setForm({...form, position: e.target.value})} />
-              </div>
             </div>
 
             <div className="flex items-center gap-2">
