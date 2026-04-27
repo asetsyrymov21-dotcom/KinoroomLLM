@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import HTTPException, status
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking, BookingStatus
@@ -19,6 +20,23 @@ from app.schemas.booking import (
     SessionHistoryRead,
 )
 from app.services.loyalty import LoyaltyService
+
+
+async def auto_complete_expired_bookings(session: AsyncSession) -> int:
+    now = datetime.now(timezone.utc)
+    result = await session.execute(
+        update(Booking)
+        .where(
+            Booking.status.in_([BookingStatus.pending, BookingStatus.active]),
+            Booking.is_open_ended.is_(False),
+            Booking.end_time <= now,
+        )
+        .values(
+            status=BookingStatus.completed,
+            completed_at=Booking.end_time,
+        )
+    )
+    return result.rowcount or 0
 
 
 class BookingService:
