@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
@@ -58,7 +60,31 @@ class SetupRequest(BaseModel):
     password: str = Field(..., min_length=6, max_length=72)
 
 
+class RegisterRequest(BaseModel):
+    tenant_name: str = Field(..., min_length=1, max_length=255, description="Название организации")
+    phone: str | None = Field(None, max_length=50, description="Телефон организации")
+    email: str = Field(..., min_length=3, max_length=64, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    password: str = Field(..., min_length=6, max_length=72)
+
+
 # ── Эндпоинты ────────────────────────────────────────────────
+
+def slugify_tenant_name(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return slug[:80] or "kinoroom"
+
+
+async def make_unique_tenant_slug(session: AsyncSession, name: str) -> str:
+    base_slug = slugify_tenant_name(name)
+    slug = base_slug
+    suffix = 2
+    while True:
+        existing = await session.execute(select(Tenant).where(Tenant.slug == slug))
+        if existing.scalar_one_or_none() is None:
+            return slug
+        slug = f"{base_slug}-{suffix}"
+        suffix += 1
+
 
 @router.post("/login", response_model=LoginResponse)
 async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)):
@@ -95,6 +121,43 @@ async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)
         role=staff.role,
         username=staff.username,
         tenant_id=staff.tenant_id,
+    )
+
+
+@router.post("/register", response_model=LoginResponse, status_code=201)
+async def register_tenant(data: RegisterRequest, session: AsyncSession = Depends(get_session)):
+    email = data.email.lower()
+    if email == settings.SUPERADMIN_USERNAME:
+        raise HTTPException(status_code=400, detail="Пользователь с таким именем уже существует")
+
+    existing_staff = await session.execute(select(Staff).where(Staff.username == email))
+    if existing_staff.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Пользователь с таким именем уже существует")
+
+    tenant = Tenant(
+        name=data.tenant_name,
+        slug=await make_unique_tenant_slug(session, data.tenant_name),
+        phone=data.phone,
+    )
+    session.add(tenant)
+    await session.flush()
+    await session.refresh(tenant)
+
+    staff = Staff(
+        tenant_id=tenant.id,
+        username=email,
+        password_hash=hash_password(data.password),
+        role=StaffRole.admin,
+    )
+    session.add(staff)
+    await session.flush()
+    await session.refresh(staff)
+
+    return LoginResponse(
+        token=create_token(staff.id, staff.role, tenant.id),
+        role=staff.role,
+        username=staff.username,
+        tenant_id=tenant.id,
     )
 
 
