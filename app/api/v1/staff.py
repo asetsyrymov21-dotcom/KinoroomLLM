@@ -58,6 +58,19 @@ class SetupRequest(BaseModel):
     password: str = Field(..., min_length=6, max_length=72)
 
 
+class RegisterRequest(BaseModel):
+    tenant_name: str = Field(..., min_length=1, max_length=255, description="Название организации")
+    tenant_slug: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-z0-9_-]+$",
+        description="Slug тенанта (латиница, уникальный)",
+    )
+    username: str = Field(..., min_length=3, max_length=64)
+    password: str = Field(..., min_length=6, max_length=72)
+
+
 # ── Эндпоинты ────────────────────────────────────────────────
 
 @router.post("/login", response_model=LoginResponse)
@@ -89,6 +102,40 @@ async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)
 @router.get("/me", response_model=StaffRead)
 async def get_me(current: Staff = Depends(get_current_staff)):
     return current
+
+
+@router.post("/register", response_model=LoginResponse, status_code=201)
+async def register(data: RegisterRequest, session: AsyncSession = Depends(get_session)):
+    """Публичная регистрация: создаёт новый кинорум и первого admin."""
+    existing_tenant = await session.execute(select(Tenant).where(Tenant.slug == data.tenant_slug))
+    if existing_tenant.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Slug уже занят")
+
+    existing_staff = await session.execute(select(Staff).where(Staff.username == data.username))
+    if existing_staff.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Пользователь с таким именем уже существует")
+
+    tenant = Tenant(name=data.tenant_name, slug=data.tenant_slug)
+    session.add(tenant)
+    await session.flush()
+    await session.refresh(tenant)
+
+    staff = Staff(
+        tenant_id=tenant.id,
+        username=data.username,
+        password_hash=hash_password(data.password),
+        role=StaffRole.admin,
+    )
+    session.add(staff)
+    await session.flush()
+    await session.refresh(staff)
+
+    return LoginResponse(
+        token=create_token(staff.id, staff.role, tenant.id),
+        role=staff.role,
+        username=staff.username,
+        tenant_id=tenant.id,
+    )
 
 
 @router.get("", response_model=list[StaffRead])
