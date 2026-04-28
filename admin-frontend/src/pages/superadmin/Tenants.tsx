@@ -175,8 +175,61 @@ export default function Tenants() {
         {loading && <p className="text-gray-500 text-sm">Загрузка...</p>}
         {error && <p className="text-red-600 text-sm">{error}</p>}
 
-        {!loading && (
-          <div className="card overflow-hidden">
+        {!loading && tenants.length === 0 && (
+          <div className="card px-4 py-8 text-center text-sm text-gray-400">
+            Нет кинорумов. Создайте первый.
+          </div>
+        )}
+
+        {!loading && tenants.length > 0 && (
+          <>
+          <div className="mobile-records">
+            {tenants.map((t) => (
+              <div key={t.id} className="card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 leading-5">{t.name}</p>
+                    <p className="mt-1 font-mono text-xs text-gray-500">{t.slug}</p>
+                  </div>
+                  <span
+                    className={`badge shrink-0 ${
+                      t.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {t.is_active ? 'Активен' : 'Отключён'}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button className="btn-secondary justify-center py-2 text-xs" onClick={() => openEdit(t)}>
+                    Изменить
+                  </button>
+                  <button className="btn-secondary justify-center py-2 text-xs" onClick={() => toggleActive(t)}>
+                    {t.is_active ? 'Отключить' : 'Включить'}
+                  </button>
+                  <button
+                    className="btn-secondary justify-center py-2 text-xs text-gray-600"
+                    onClick={() => openStaffModal(t)}
+                  >
+                    Сотрудники
+                  </button>
+                  <button
+                    className="btn-secondary justify-center py-2 text-xs text-brand-600"
+                    onClick={() => openAdminModal(t)}
+                  >
+                    Администратор
+                  </button>
+                  <button
+                    className="btn-ghost col-span-2 justify-center py-2 text-xs text-red-500"
+                    onClick={() => deleteTenant(t)}
+                  >
+                    Удалить
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="card desktop-table">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -232,16 +285,10 @@ export default function Tenants() {
                     </td>
                   </tr>
                 ))}
-                {tenants.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="table-cell text-center text-gray-400 py-8">
-                      Нет кинорумов. Создайте первый.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

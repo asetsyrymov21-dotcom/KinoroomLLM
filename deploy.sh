@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================
-#  deploy.sh — коммит и пуш (VPS деплоится автоматически)
+#  deploy.sh — коммит и пуш текущей ветки
 #  Использование:
 #    ./deploy.sh "сообщение коммита"
 #    ./deploy.sh              # сообщение по умолчанию: "deploy"
@@ -16,14 +16,25 @@ NC='\033[0m'
 
 info()    { echo -e "${GREEN}[deploy]${NC} $1"; }
 warning() { echo -e "${YELLOW}[deploy]${NC} $1"; }
+fail()    { echo -e "${YELLOW}[deploy]${NC} $1"; exit 1; }
 
-# ── 1. Чистим index.lock если завис ───────────────────────────
+# ── 1. Проверяем ветку ────────────────────────────────────────
+BRANCH="$(git branch --show-current)"
+if [ -z "$BRANCH" ]; then
+    fail "Не удалось определить текущую ветку"
+fi
+if [ "$BRANCH" = "main" ]; then
+    fail "Прямой push в main запрещён. Создайте рабочую ветку и откройте PR."
+fi
+info "Текущая ветка: $BRANCH"
+
+# ── 2. Чистим index.lock если завис ───────────────────────────
 if [ -f ".git/index.lock" ]; then
     warning "Удаляю зависший .git/index.lock..."
     rm -f ".git/index.lock"
 fi
 
-# ── 2. Git: add → commit → push ───────────────────────────────
+# ── 3. Git: add → commit → push ───────────────────────────────
 info "git add -A"
 git add -A
 
@@ -34,7 +45,7 @@ else
     git commit -m "$COMMIT_MSG"
 fi
 
-info "git push origin main"
-git push origin main
+info "git push origin $BRANCH"
+git push origin "$BRANCH"
 
-info "✓ Запушено. VPS задеплоится автоматически."
+info "✓ Ветка запушена. Откройте PR в main для деплоя через GitHub Actions."

@@ -1,68 +1,18 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import type { AuthInfo } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 
-function makeSlug(value: string) {
-  const map: Record<string, string> = {
-    а: 'a',
-    б: 'b',
-    в: 'v',
-    г: 'g',
-    д: 'd',
-    е: 'e',
-    ё: 'e',
-    ж: 'zh',
-    з: 'z',
-    и: 'i',
-    й: 'y',
-    к: 'k',
-    л: 'l',
-    м: 'm',
-    н: 'n',
-    о: 'o',
-    п: 'p',
-    р: 'r',
-    с: 's',
-    т: 't',
-    у: 'u',
-    ф: 'f',
-    х: 'h',
-    ц: 'c',
-    ч: 'ch',
-    ш: 'sh',
-    щ: 'sch',
-    ы: 'y',
-    э: 'e',
-    ю: 'yu',
-    я: 'ya',
-  }
-
-  return value
-    .trim()
-    .toLowerCase()
-    .split('')
-    .map((char) => map[char] ?? char)
-    .join('')
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 100)
-}
-
 export default function Register() {
   const { setAuth } = useAuth()
   const navigate = useNavigate()
   const [tenantName, setTenantName] = useState('')
-  const [tenantSlug, setTenantSlug] = useState('')
-  const [username, setUsername] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  const suggestedSlug = useMemo(() => makeSlug(tenantName), [tenantName])
-  const slug = tenantSlug || suggestedSlug
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -71,8 +21,8 @@ export default function Register() {
     try {
       const { data } = await api.post<AuthInfo>('/staff/register', {
         tenant_name: tenantName,
-        tenant_slug: slug,
-        username,
+        phone: phone || null,
+        email,
         password,
       })
       setAuth(data)
@@ -109,25 +59,24 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="label">Адрес в системе</label>
+              <label className="label">Телефон организации</label>
               <input
                 className="input"
-                type="text"
-                value={slug}
-                onChange={(e) => setTenantSlug(makeSlug(e.target.value))}
-                placeholder="kinoroom-qyzylorda"
-                required
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+7 700 000 00 00"
               />
             </div>
 
             <div>
-              <label className="label">Логин администратора</label>
+              <label className="label">Email администратора</label>
               <input
                 className="input"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
                 required
               />
             </div>
@@ -152,7 +101,7 @@ export default function Register() {
 
             <button
               type="submit"
-              disabled={loading || !slug}
+              disabled={loading}
               className="btn-primary w-full justify-center py-2.5"
             >
               {loading ? 'Создаём...' : 'Зарегистрироваться'}

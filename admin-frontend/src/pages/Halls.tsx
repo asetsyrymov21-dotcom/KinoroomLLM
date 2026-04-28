@@ -98,8 +98,33 @@ export default function Halls() {
       <div className="px-8">
         {loading ? (
           <p className="text-gray-500 text-sm">Загрузка...</p>
+        ) : halls.length === 0 ? (
+          <div className="card px-4 py-8 text-center text-sm text-gray-400">Нет залов</div>
         ) : (
-          <div className="card overflow-hidden">
+          <>
+          <div className="mobile-records">
+            {halls.map((h) => (
+              <div key={h.id} className="card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 leading-5">{h.name}</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {h.capacity} мест · {Number(h.price_per_hour).toLocaleString()} ₸/час
+                    </p>
+                  </div>
+                  <span className={`badge shrink-0 ${h.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {h.is_active ? 'Активен' : 'Скрыт'}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button className="btn-secondary justify-center py-2 text-xs" onClick={() => openEdit(h)}>Изменить</button>
+                  <button className="btn-ghost justify-center py-2 text-xs text-red-500" onClick={() => deleteHall(h)}>Удалить</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="card desktop-table">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -129,12 +154,10 @@ export default function Halls() {
                     </td>
                   </tr>
                 ))}
-                {halls.length === 0 && (
-                  <tr><td colSpan={5} className="table-cell text-center text-gray-400 py-8">Нет залов</td></tr>
-                )}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
