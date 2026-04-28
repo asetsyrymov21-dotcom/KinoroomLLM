@@ -70,11 +70,11 @@ class FakeStaffSession:
         return None
 
 
-def make_staff(staff_id: int, tenant_id: int) -> Staff:
+def make_staff(staff_id: int, tenant_id: int, username: str = "admin") -> Staff:
     staff = Staff(
         id=staff_id,
         tenant_id=tenant_id,
-        username="admin",
+        username=username,
         password_hash=PASSWORD_HASH,
         role=StaffRole.admin,
     )
@@ -149,25 +149,32 @@ def test_register_creates_tenant_and_first_admin() -> None:
 
     status_code, body = post_register(
         session,
-        {"tenant_name": "KinoRoom Sirius", "username": "sirius-admin", "password": PASSWORD},
+        {
+            "tenant_name": "KinoRoom Sirius",
+            "phone": "+777713659988",
+            "email": "SIRIUS@ROOMPILOT.KZ",
+            "password": PASSWORD,
+        },
     )
 
     assert status_code == 201
     assert body["role"] == StaffRole.admin
-    assert body["username"] == "sirius-admin"
+    assert body["username"] == "sirius@roompilot.kz"
     assert body["tenant_id"] == 2
     assert body["token"]
     assert session._tenants[1].slug == "kinoroom-sirius-2"
+    assert session._tenants[1].phone == "+777713659988"
     assert session._staff[0].tenant_id == 2
+    assert session._staff[0].username == "sirius@roompilot.kz"
     assert verify_password(PASSWORD, session._staff[0].password_hash)
 
 
 def test_register_rejects_existing_username() -> None:
-    session = FakeStaffSession([make_staff(staff_id=1, tenant_id=10)])
+    session = FakeStaffSession([make_staff(staff_id=1, tenant_id=10, username="admin@roompilot.kz")])
 
     status_code, body = post_register(
         session,
-        {"tenant_name": "New KinoRoom", "username": "admin", "password": PASSWORD},
+        {"tenant_name": "New KinoRoom", "email": "admin@roompilot.kz", "password": PASSWORD},
     )
 
     assert status_code == 400
