@@ -18,6 +18,15 @@
 - Automation: diagnostics only
 - Manual: targeted fixes only
 
+## Live URLs
+- Main domain: https://roompilot.kz
+- Admin panel: https://roompilot.kz/admin
+- Setup page: https://roompilot.kz/setup.html
+- Telegram Mini App: https://app.roompilot.kz
+- Mini App API: https://app.roompilot.kz/api/v1/
+- Public API/docs: https://roompilot.kz/api/v1/ and https://roompilot.kz/docs
+- Do not use old Cloudflare tunnel URLs as canonical links; they were temporary.
+
 ## Routing
 - Debug -> ai/rules/debug.md
 - Deploy -> ai/rules/git-deploy.md

@@ -248,13 +248,14 @@ docker exec -it kinoroom-api-1 bash
 
 - Приложение запускается на порту **8001**
 - Публичный доступ: **Cloudflare Tunnel** (активный) + ngrok (запасной)
-- Текущий URL Cloudflare: `https://anonymous-sitting-judicial-colors.trycloudflare.com` (меняется при перезапуске туннеля)
-- Панель управления: `https://<текущий-url>/admin` (React-SPA, роли: superadmin / admin / operator)
-- Операторка (legacy): `https://<текущий-url>/operator.html`
-- Первичная настройка: `https://<текущий-url>/setup.html`
-- Мини-апп (Telegram Web App): `https://<текущий-url>/app`
-- API: `https://<текущий-url>/api/v1/`
-- Ngrok статичный домен (запасной): **mercedes-ironic-rikki.ngrok-free.app**
+- Основной домен: `https://roompilot.kz`
+- Панель управления: `https://roompilot.kz/admin` (React-SPA, роли: superadmin / admin / operator)
+- Операторка (legacy): `https://roompilot.kz/operator.html`
+- Первичная настройка: `https://roompilot.kz/setup.html`
+- Мини-апп (Telegram Web App): `https://app.roompilot.kz`
+- API miniapp: `https://app.roompilot.kz/api/v1/`
+- Public API/docs: `https://roompilot.kz/api/v1/`, `https://roompilot.kz/docs`
+- Старые Cloudflare/ngrok tunnel URLs не считать каноническими; они были временными.
 - Аккаунт ngrok: olzhik882009@gmail.com (Plan: Free)
 
 ---
