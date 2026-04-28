@@ -92,11 +92,22 @@ export interface Booking {
   is_open_ended: boolean
 }
 
+export interface OrderItem {
+  id: number
+  order_id: number
+  product_id: number
+  quantity: number
+  price_at_order: number
+}
+
 export interface Order {
   id: number
   booking_id: number
   status: string
-  total: number | null
+  created_at?: string
+  completed_at?: string | null
+  total?: number | null
+  items?: OrderItem[]
 }
 
 export interface StockBalance {
