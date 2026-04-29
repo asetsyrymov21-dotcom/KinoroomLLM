@@ -17,7 +17,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      const { data } = await api.post<AuthInfo>('/staff/login', { username, password })
+      const { data } = await api.post<AuthInfo>('/staff/login', { username: username.trim(), password })
       setAuth(data)
       // Перенаправить на первую доступную страницу
       if (data.role === 'superadmin') {
@@ -46,13 +46,14 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label">Логин</label>
+              <label className="label">Email администратора</label>
               <input
                 className="input"
-                type="text"
+                type="email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="username"
+                placeholder="admin@example.com"
+                autoComplete="email"
                 required
                 autoFocus
               />
@@ -65,6 +66,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••"
+                autoComplete="current-password"
                 required
               />
             </div>

@@ -20,9 +20,9 @@ export default function Register() {
     setLoading(true)
     try {
       const { data } = await api.post<AuthInfo>('/staff/register', {
-        tenant_name: tenantName,
-        phone: phone || null,
-        email,
+        tenant_name: tenantName.trim(),
+        phone: phone.trim() || null,
+        email: email.trim(),
         password,
       })
       setAuth(data)
@@ -77,6 +77,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@example.com"
+                autoComplete="email"
                 required
               />
             </div>
@@ -89,6 +90,7 @@ export default function Register() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Минимум 6 символов"
+                autoComplete="new-password"
                 required
                 minLength={6}
                 maxLength={72}
