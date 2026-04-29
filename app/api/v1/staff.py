@@ -88,9 +88,12 @@ async def make_unique_tenant_slug(session: AsyncSession, name: str) -> str:
 
 @router.post("/login", response_model=LoginResponse)
 async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)):
+    identifier = data.username.strip()
+    lookup_username = identifier.lower() if "@" in identifier else identifier
+
     # Проверяем superadmin через env (нет записи в БД)
     if (
-        data.username == settings.SUPERADMIN_USERNAME
+        identifier == settings.SUPERADMIN_USERNAME
         and data.password == settings.SUPERADMIN_PASSWORD
     ):
         return LoginResponse(
@@ -102,7 +105,7 @@ async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)
 
     result = await session.execute(
         select(Staff)
-        .where(Staff.username == data.username)
+        .where(Staff.username == lookup_username)
         .order_by(Staff.id)
         .limit(2)
     )
@@ -126,7 +129,7 @@ async def login(data: LoginRequest, session: AsyncSession = Depends(get_session)
 
 @router.post("/register", response_model=LoginResponse, status_code=201)
 async def register_tenant(data: RegisterRequest, session: AsyncSession = Depends(get_session)):
-    email = data.email.lower()
+    email = data.email.strip().lower()
     if email == settings.SUPERADMIN_USERNAME:
         raise HTTPException(status_code=400, detail="Пользователь с таким именем уже существует")
 
